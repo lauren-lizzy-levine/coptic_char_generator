@@ -1,0 +1,4 @@
+__pycache__/
+coptic_data_processing.log
+*.model
+*.vocab
