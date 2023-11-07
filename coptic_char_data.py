@@ -1,62 +1,44 @@
-import datetime
 import regex as re
 
 from coptic_utils import *
 
 
-def read_datafile(file_name):
-    with open(file_name, "r") as f:
-        file_text = f.read()
-        tt_file = file_text.strip().split("\n")
-        logger.info(f"Total lines: {len(tt_file)}")
+def read_datafiles(file_list):
+    sentences = {}
 
-        sentences = []
-        temp_sentence = ""
-        temp_orig_group_content = ""
+    for file_name in file_list:
+        with open(file_name, "r") as f:
+            file_text = f.read()
+            tt_file = file_text.strip().split("\n")
+            logger.debug(f"Total lines in {file_name}: {len(tt_file)}")
 
-        orig_group = False
-        new_sentence_detected = False
+            temp_sentence = ""
+            temp_orig_group_content = ""
 
-        for line in tt_file:
-            line = line.strip()
-            if line.startswith("<orig_group orig_group=") or line.startswith("<norm_group orig_group="):
-                if line.startswith("<orig_group orig_group="):
-                        orig_group = True
-                orig_group_match = re.search("orig_group=\".*?\"", line)
-                # TODO: strip diacritics from content before adding it
-                temp_orig_group_content = orig_group_match.group(0)[12:-1]
+            orig_group = False
+            new_sentence_detected = False
 
-            if "new_sent=\"true\"" in line:
-                new_sentence_detected = True
+            for line in tt_file:
+                line = line.strip()
+                if line.startswith("<orig_group orig_group=") or line.startswith("<norm_group orig_group="):
+                    if line.startswith("<orig_group orig_group="):
+                            orig_group = True
+                    orig_group_match = re.search("orig_group=\".*?\"", line)
+                    # TODO: strip diacritics from content before adding it
+                    temp_orig_group_content = orig_group_match.group(0)[12:-1]
 
-            if (line.startswith("</norm_group") and not orig_group) or line.startswith("</orig_group"):
-                orig_group = False
+                if "new_sent=\"true\"" in line:
+                    new_sentence_detected = True
 
-                if new_sentence_detected:
-                    if len(temp_sentence) > 0:
-                        sentences.append(temp_sentence)
-                    temp_sentence = temp_orig_group_content
-                    new_sentence_detected = False
-                else:
-                    temp_sentence += temp_orig_group_content
-        sentences.append(temp_sentence)
+                if (line.startswith("</norm_group") and not orig_group) or line.startswith("</orig_group"):
+                    orig_group = False
+
+                    if new_sentence_detected:
+                        if len(temp_sentence) > 0:
+                            sentences[len(sentences)] = temp_sentence
+                        temp_sentence = temp_orig_group_content
+                        new_sentence_detected = False
+                    else:
+                        temp_sentence += temp_orig_group_content
+            sentences[len(sentences)] = temp_sentence
     return sentences
-
-
-if __name__ == "__main__":
-    logger.info(
-        f"\nstart coptic data processing -- {datetime.datetime.now()}"
-    )
-
-    # TODO point to the external file path
-    # read through all the subdirectories
-
-    sentences = read_datafile("./data/AP.001.n135.mother.tt")
-    print(sentences)
-    logger.info(f"File read: {len(sentences)} sentences")
-    # sentences = read_datafile("./data/01_Genesis_03.tt")
-    # # print(sentences)
-    # logger.info(f"File read: {len(sentences)} sentences")
-
-    # instead of saving in memory, save it into a csv
-

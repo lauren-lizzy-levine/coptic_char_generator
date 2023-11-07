@@ -1,52 +1,45 @@
-import glob
 import sentencepiece as spm
 
 from coptic_utils import *
 
-file_dir_path = f"{get_home_path()}/Desktop/corpora_tt"
-files = ','.join(glob.glob(f"{file_dir_path}/*/*.tt")) # can use ',' separated list
-logger.debug(files)
-# note - this is currently running on all .tt files, including all the tags that we aren't interested in
-# get this warning: trainer_interface.cc(122) LOG(WARNING) Too many sentences are loaded! (7535610), which may slow down training.
 
+def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
+    # for a complete list of options see: https://github.com/google/sentencepiece/blob/master/doc/options.md
+    params = ""
+    params = params + " --input=" + files  # only required parameters
+    params = params + f" --model_prefix=./models/{model_name}"  # specify an output name
 
-vocab_size = 1000
-model_name = "coptic_sp"
+    # optional parameters
+    params = params + " --vocab_size=" + str(vocab_size)  # default: 8000
+    params = params + ' --character_coverage=1.0'
+    params = params + " --model_type=char"
 
-# for a complete list of options see: https://github.com/google/sentencepiece/blob/master/doc/options.md
-params = ""
-params = params + " --input=" + files  # only required parameters
-params = params + f" --model_prefix=./models/{model_name}"  # specify an output name
+    # params = params + ' --pad_id=3'					# include <pad> control symbol
+    # params = params + ' --control_symbols=<mask>,<oov>'
 
-# optional parameters
-params = params + " --vocab_size=" + str(vocab_size)  # default: 8000
-params = params + ' --character_coverage=1.0'
-params = params + " --model_type=char"
+    # trains a vocabulary and write 2 files: ./models/coptic_sp.model and ./models/coptic_sp.vocab
+    if train:
+        spm.SentencePieceTrainer.Train(params)
 
-# params = params + ' --pad_id=3'					# include <pad> control symbol
-# params = params + ' --control_symbols=<mask>,<oov>'
+    # load and test of model
+    fn_model = f"./models/{model_name}.model"
 
-# trains a vocabulary and write 2 files: ./models/coptic_sp.model and ./models/coptic_sp.vocab
-train = True
-# train = False
-if train:
-    spm.SentencePieceTrainer.Train(params)
+    logger.info(f"starting SentencePiece {model_name} with {params}")
 
-# load and test of model
-fn_model = f"./models/{model_name}.model"
+    sp = spm.SentencePieceProcessor()
+    sp.Load(fn_model)
 
-sp = spm.SentencePieceProcessor()
-sp.Load(fn_model)
+    logger.info(f"SentencePiece model {model_name} created")
 
-print(sp.__dict__)
-print(sp.this)
+    print(sp.__dict__)
+    print(sp.this)
 
-print(sp.EncodeAsPieces("Hello world."))
-print(sp.EncodeAsIds("Hello world."))
+    print(sp.EncodeAsPieces("Hello world."))
+    print(sp.EncodeAsIds("Hello world."))
 
-print()
-print(sp.EncodeAsPieces("ⲕⲱⲧⲉ"))
-print(sp.EncodeAsIds("ⲕⲱⲧⲉ"))
+    print()
+    print(sp.EncodeAsPieces("ⲕⲱⲧⲉ"))
+    print(sp.EncodeAsIds("ⲕⲱⲧⲉ"))
 
-print()
-print(sp.DecodeIds([10, 30, 60, 100]))  # just some random tokens
+    print()
+    print(sp.DecodeIds([10, 30, 60, 100]))  # just some random tokens
