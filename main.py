@@ -12,6 +12,8 @@ if __name__ == "__main__":
         "-m", "--model", required=False, help="Name of pre-trained model"
     )
 
+    # TODO - train/dev/test split (we may want to do this before step 1
+
     # step 1 - read in data
     logger.info(
         f"\nstart coptic data processing -- {datetime.datetime.now()}"
@@ -28,14 +30,15 @@ if __name__ == "__main__":
 
     # step 2 - write to csv
 
-
-    # step 3 - train/dev/test split (we may want to do this before step 1)
-
-    # step 4 - sentence piece (on training)
+    # step 3 - sentence piece (on training)
+    # update "file_string" with csv path, may need minor updates
     model_name = "coptic_sp"
     sp_coptic.create_sentencepiece_model(file_string, model_name, vocab_size=1000, train=True)
     # note - this is currently running on all .tt files, including all the tags that we aren't interested in
     # get this warning: trainer_interface.cc(122) LOG(WARNING) Too many sentences are loaded! (7535610), which may slow down training.
 
 
-    # step 5 - model training
+    # step 4 - model training
+
+
+    # step 5 - evaluation (accuracy metrics)
