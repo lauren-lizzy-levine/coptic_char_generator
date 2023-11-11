@@ -1,10 +1,11 @@
+import csv
 import regex as re
 
 from coptic_utils import *
 
 
 def read_datafiles(file_list):
-    sentences = {}
+    sentences = []
 
     for file_name in file_list:
         with open(file_name, "r") as f:
@@ -20,25 +21,39 @@ def read_datafiles(file_list):
 
             for line in tt_file:
                 line = line.strip()
-                if line.startswith("<orig_group orig_group=") or line.startswith("<norm_group orig_group="):
+                if line.startswith("<orig_group orig_group=") or line.startswith(
+                    "<norm_group orig_group="
+                ):
                     if line.startswith("<orig_group orig_group="):
-                            orig_group = True
-                    orig_group_match = re.search("orig_group=\".*?\"", line)
+                        orig_group = True
+                    orig_group_match = re.search('orig_group=".*?"', line)
                     # TODO: strip diacritics from content before adding it
                     temp_orig_group_content = orig_group_match.group(0)[12:-1]
 
-                if "new_sent=\"true\"" in line:
+                if 'new_sent="true"' in line:
                     new_sentence_detected = True
 
-                if (line.startswith("</norm_group") and not orig_group) or line.startswith("</orig_group"):
+                if (
+                    line.startswith("</norm_group") and not orig_group
+                ) or line.startswith("</orig_group"):
                     orig_group = False
 
                     if new_sentence_detected:
                         if len(temp_sentence) > 0:
-                            sentences[len(sentences)] = temp_sentence
+                            sentences.append(
+                                {"index": len(sentences), "sentence": temp_sentence}
+                            )
                         temp_sentence = temp_orig_group_content
                         new_sentence_detected = False
                     else:
                         temp_sentence += temp_orig_group_content
-            sentences[len(sentences)] = temp_sentence
+            sentences.append({"index": len(sentences), "sentence": temp_sentence})
     return sentences
+
+
+def write_to_csv(file_name, sentence_list):
+    column_names = ["index", "sentence"]
+    with open(file_name, "w") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=column_names)
+        writer.writeheader()
+        writer.writerows(sentence_list)

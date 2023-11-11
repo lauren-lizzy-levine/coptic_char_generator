@@ -2,3 +2,4 @@ __pycache__/
 coptic_data_processing.log
 *.model
 *.vocab
+coptic_sentences.csv

@@ -18,4 +18,4 @@ logger.addHandler(stdout_handler)
 
 
 def get_home_path():
-    return os.path.expanduser('~')
+    return os.path.expanduser("~")
