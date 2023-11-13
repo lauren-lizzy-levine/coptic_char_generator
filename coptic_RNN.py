@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import random
 
 class RNN(nn.Module):
     def __init__(self, sentence_piece, specs):
@@ -10,6 +10,7 @@ class RNN(nn.Module):
         self.unk_id = sentence_piece.piece_to_id("<unk>")
         self.bos_id = sentence_piece.piece_to_id("<s>")
         self.eos_id = sentence_piece.piece_to_id("</s>")
+        self.mask = sentence_piece.piece_to_id("<mask>")
 
         nTokens = sentence_piece.get_piece_size()
         self.specs = specs + [nTokens]
@@ -62,11 +63,20 @@ class RNN(nn.Module):
 
         return out, hidden
 
-    def lookup_ndxs(self, text, add_control=True):
-        indexes = self.sentence_piece.EncodeAsIds(text)
-        if add_control:
-            indexes = [self.bos_id] + indexes + [self.eos_id]
-        return indexes
+    def lookup_ndxs(self, text, masking_proportion=0.15):
+        input_indexes = self.sentence_piece.EncodeAsIds(text)
+        output_indexes = [-100] * len(input_indexes) # not sure if this is reasonable
+        # mask characters in the self.mask is mask index
+        for i in range(len(input_indexes)):
+            # random chance of masking
+            r = random.random()
+            if r < masking_proportion:
+                # if mask put input index in output and make input index the mask index
+                target_index = input_indexes[i]
+                input_indexes[i] = self.mask
+                output_indexes[i] = target_index
+            # else, pass
+        return input_indexes, output_indexes
 
     def decode(self, indexes):
         tokens = self.sentence_piece.decode(indexes)

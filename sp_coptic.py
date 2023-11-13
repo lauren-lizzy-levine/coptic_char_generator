@@ -15,7 +15,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     params = params + " --model_type=char"
 
     # params = params + ' --pad_id=3'					# include <pad> control symbol
-    # params = params + ' --control_symbols=<mask>,<oov>'
+    params = params + ' --control_symbols=<mask>' #,<oov>'
 
     # trains a vocabulary and write 2 files: ./models/coptic_sp.model and ./models/coptic_sp.vocab
     if train:
@@ -40,6 +40,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     print()
     print(sp.EncodeAsPieces("ⲕⲱⲧⲉ"))
     print(sp.EncodeAsIds("ⲕⲱⲧⲉ"))
+    print(sp.PieceToId("<mask>"))
 
     print()
-    print(sp.DecodeIds([10, 30, 60, 100]))  # just some random tokens
+    print(sp.DecodeIds([10, 32, 60, 14]))  # just some random tokens

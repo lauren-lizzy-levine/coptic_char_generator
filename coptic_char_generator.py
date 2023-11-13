@@ -1,6 +1,7 @@
 import argparse
 import time, os, sys, random, datetime
 from random import shuffle
+import re
 
 # import matplotlib.pyplot as plt
 import numpy as np
@@ -71,7 +72,7 @@ batch_size_multiplier = 2
 
 # nEpochs = 1
 nEpochs = 2
-# nEpochs = 4
+nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
 
@@ -79,13 +80,15 @@ nEpochs = 2
 L2_lambda = 0.001
 
 model_path = "models/"
-data_path = f"{get_home_path()}/Desktop/corpora_tt"
+data_path = "./"#f"{get_home_path()}/Desktop/corpora_tt"
 
 
 class DataItem:
-    def __init__(self, text=None, indexes=None):
+    def __init__(self, text=None, indexes=None, mask=None, labels=None):
         self.text = text  # original text
         self.indexes = indexes  # indexes of characters or tokens
+        self.mask = mask
+        self.labels = labels
 
 
 def count_parameters(model):
@@ -101,10 +104,12 @@ def count_parameters(model):
 def read_datafile(file_name, data_list):
     with open(file_name, "r") as f:
         file_text = f.read()
-        story = file_text.strip().split("\n")
+        sentences = file_text.strip().split("\n")
+        sentences = sentences[1:] # skip header
 
-        for sentence in story:
+        for sentence in sentences:
             sentence = sentence.strip()
+            sentence = re.sub(r'\d+,', "", sentence)
             if len(sentence) == 0:
                 continue
             data_list.append(DataItem(sentence))
@@ -120,11 +125,12 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         data_item = data[i]
         # logger.debug(data_item.text)
         if data_item.indexes is None:
-            data_item.indexes = model.lookup_ndxs(data_item.text)
+            data_item.indexes, data_item.labels = model.lookup_ndxs(data_item.text)
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
-        out, hidden = model([index_tensor[:-1]])
-        loss = criterion(out[0], index_tensor[1:])
+        label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
+        out, hidden = model([index_tensor]) # [:-1]
+        loss = criterion(out[0], label_tensor) # [1:]
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -139,7 +145,7 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     return total_loss, total_tokens, total_chars
 
 
-def train_model(model, train_data, dev_data=None, output_name="tokLM"):
+def train_model(model, train_data, dev_data=None, output_name="charLM"):
     data_list = [i for i in range(len(train_data))]
     if dev_data == None:
         shuffle(data_list)
@@ -203,7 +209,21 @@ def train_model(model, train_data, dev_data=None, output_name="tokLM"):
         logger.info(
             f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- ibs: {ibs:4} time elapsed: {time.time() - start:6.1f}"
         )
-        sample = generate(model, seed="Mary never", n=200, temp=0)
+        #sample = generate(model, seed="Mary never", n=200, temp=0)
+        sample = "ⲉⲁϥϫⲱⲕⲉⲃⲟⲗⲛ̄ⲛⲉⲩⲁⲓⲧⲏⲙⲁⲧⲏⲣⲟⲩ·"
+        indexes, labels = model.lookup_ndxs(sample)
+        index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
+        sample_out, sample_hidden = model([index_tensor])
+        # Not sure if this is the right was to be decoding...
+        target = []
+        for emb in sample_out[0]:
+            scores = emb  # [0,-1]
+            _, best = scores.max(0)
+            best = best.data.item()
+            target.append(best)
+        text = model.decode(target)
+        print(text)
+        print(labels)
         logging.info(sample)
 
         torch.save(model, f"{model_path}/{output_name}.pth")
@@ -279,7 +299,7 @@ if __name__ == "__main__":
     count_parameters(model)
 
     if train:
-        data_files = ["ROCStories_spring2016.txt", "ROCStories_winter2017.txt"]
+        data_files = ["coptic_sentences.csv"]
         data = []
         for file in data_files:
             file_path = data_path + file
@@ -293,3 +313,4 @@ if __name__ == "__main__":
     mlen = 200
     # temp = 0.1	# this will select a random word based on the probability distribution scaled by p/temp
     temp = 0  # this will select the best word at each step
+    # input example
