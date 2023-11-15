@@ -5,11 +5,17 @@ import glob
 import coptic_char_data
 import sp_coptic
 from coptic_utils import *
+from coptic_char_generator import *
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Coptic character level generator")
     parser.add_argument(
-        "-m", "--model", required=False, help="Name of pre-trained model"
+        "-tr",
+        "--train",
+        required=False,
+        help="True to train the model",
+        action="store_true",
     )
     parser.add_argument(
         "-sp",
@@ -37,6 +43,7 @@ if __name__ == "__main__":
     # TODO - what other information might we want to in the csv?
 
     csv_name = "coptic_sentences.csv"
+    model_name = "coptic_sp"
 
     # step 2 - write to csv
     coptic_char_data.write_to_csv(csv_name, sentences)
@@ -44,13 +51,43 @@ if __name__ == "__main__":
     # step 3 - sentence piece (on training)
     # update "file_string" with csv path, may need minor updates
     if args.sentencepiece:
-        model_name = "coptic_sp"
         sp_coptic.create_sentencepiece_model(
-            csv_name, model_name, vocab_size=1000, train=True
+            csv_name, f"{model_name}.model", vocab_size=1000, train=True
         )
         # note - this is currently running on all .tt files, including all the tags that we aren't interested in
         # get this warning: trainer_interface.cc(122) LOG(WARNING) Too many sentences are loaded! (7535610), which may slow down training.
 
     # step 4 - model training
+    if args.train:
+        logger.info("Training a sentencepiece model")
+        sp = spm.SentencePieceProcessor()
+        sp.Load(model_path + model_name + ".model")
+
+        logger.info(
+            f"Train {model_name} model specs: embed_size: {specs[0]}, hidden_size: {specs[1]}, proj_size: {specs[2]}, rnn n layers: {specs[3]}, share: {specs[4]}, dropout: {specs[5]}"
+        )
+
+        model = RNN(sp, specs)
+        model.tokenizer = model_name
+        model = model.to(device)
+    else:
+        logger.info(f"Using a pre-trained model")
+        model = torch.load(model_path + model_name, map_location=device)
+        logger.info(
+            f"Load model: {args.model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
+        )
+
+    logger.debug(model)
+    count_parameters(model)
+
+    if args.train:
+        data = []
+        file_path = f"./" + csv_name
+        read_datafile(file_path, data)
+        logger.info(f"File {csv_name} read in with {len(data)} lines")
+
+        model = train_model(model, data, output_name=model_name)
+
+    logger.info(f"end generator -- {datetime.datetime.now()}")
 
     # step 5 - evaluation (accuracy metrics)

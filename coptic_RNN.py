@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import random
 
+from coptic_utils import *
+
+
 class RNN(nn.Module):
     def __init__(self, sentence_piece, specs):
         super(RNN, self).__init__()
@@ -12,26 +15,25 @@ class RNN(nn.Module):
         self.eos_id = sentence_piece.piece_to_id("</s>")
         self.mask = sentence_piece.piece_to_id("<mask>")
 
-        nTokens = sentence_piece.get_piece_size()
-        self.specs = specs + [nTokens]
+        num_tokens = sentence_piece.get_piece_size()
+        self.specs = specs + [num_tokens]
 
         embed_size, hidden_size, proj_size, rnn_nLayers, self.share, dropout = specs
-        self.embed = nn.Embedding(nTokens, embed_size)
+        self.embed = nn.Embedding(num_tokens, embed_size)
 
         # if rnn_nLayers == 1: dropout = 0.0 # dropout is only applied between layers
         self.rnn = nn.LSTM(
             embed_size,
             hidden_size,
             rnn_nLayers,
+            # bidirectional=True, <- want to turn this on later, once we're sure things are working
             dropout=dropout,
             batch_first=True,
             proj_size=proj_size,
         )
 
         if not self.share:
-            self.out = nn.Linear(
-                proj_size, nTokens, bias=False
-            )  # character - CrossEntropy
+            self.out = nn.Linear(proj_size, num_tokens, bias=False)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -44,28 +46,30 @@ class RNN(nn.Module):
                 pass
 
     def forward(self, seqs, hidden=None):
-        print(seqs)
-        nBatch = len(seqs)
-        nTokens = len(seqs[0])
-        seqs = torch.cat(seqs).view(nBatch, nTokens)
+        logger.debug(seqs)
+        num_batches = len(seqs)
+        num_tokens = len(seqs[0])
+        seqs = torch.cat(seqs).view(num_batches, num_tokens)
+
         embed = self.embed(seqs)
         embed = self.dropout(embed)
         prev, hidden = self.rnn(embed, hidden)
-        print(hidden[0].shape)
-        print(hidden[1].shape)
+
+        logger.debug(hidden[0].shape)
+        logger.debug(hidden[1].shape)
+
         prev = self.dropout(prev)
         if not self.share:
             out = self.out(prev)  # chars
         else:
-            out = torch.matmul(
-                prev, torch.t(self.embed.weight)
-            )  # uses the embedding table as the output layer
+            logger.debug("Using embedding table as output layer...")
+            out = torch.matmul(prev, torch.t(self.embed.weight))
 
         return out, hidden
 
     def lookup_ndxs(self, text, masking_proportion=0.15):
         input_indexes = self.sentence_piece.EncodeAsIds(text)
-        output_indexes = [-100] * len(input_indexes) # not sure if this is reasonable
+        output_indexes = [-100] * len(input_indexes)  # not sure if this is reasonable
         # mask characters in the self.mask is mask index
         for i in range(len(input_indexes)):
             # random chance of masking

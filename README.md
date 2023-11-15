@@ -9,8 +9,15 @@ is to clone the data repo into your Desktop and the data path will work without 
 
 ## Command Line Arguments
 
-To train a SentencePiece model:
-`python main.py -sp`
+### SentencePiece
+
+To run the project, the command is just `python main.py`
+
+To train a SentencePiece model, add `-sp` or `-sentencepiece` to the command.
 
 If you already have a SentencePiece model named "coptic_sp.model" and "coptic_sp.vocab" and don't need to retrain, leave
 out the `-sp` flag. 
+
+### Model Training
+
+To train 
