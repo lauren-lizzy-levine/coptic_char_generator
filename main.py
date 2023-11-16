@@ -88,4 +88,6 @@ if __name__ == "__main__":
 
     # step 5 - evaluation (accuracy metrics)
 
+    # TODO fill in evaluation
+
     logger.info(f"end generator -- {datetime.datetime.now()}")
