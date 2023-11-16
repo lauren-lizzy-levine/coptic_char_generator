@@ -79,14 +79,15 @@ nEpochs = 4
 L2_lambda = 0.001
 
 model_path = "models/"
+masking_proportion = 0.15
 
 
 class DataItem:
     def __init__(self, text=None, indexes=None, mask=None, labels=None):
         self.text = text  # original text
         self.indexes = indexes  # indexes of characters or tokens
-        self.mask = mask
-        self.labels = labels
+        self.mask = mask  # torch tensor same size as index, true when character is masked
+        self.labels = labels  # torch tensor attention mask
 
 
 def count_parameters(model):
@@ -110,9 +111,31 @@ def read_datafile(file_name, data_list):
             sentence = re.sub(r"\d+,", "", sentence)
             if len(sentence) == 0:
                 continue
-            data_list.append(DataItem(sentence))
+            data_list.append(DataItem(text=sentence))
             # if len(data_list) > 100:
             #     break
+
+
+def mask_and_label_characters(data_item, masking_proportion=masking_proportion):
+    init_mask = torch.full(len(data_item.indexes), True)
+    init_labels = torch.full(len(data_item.indexes), -100)
+
+    #TODO finish this function
+
+    for i in range(len(data_item.indexes)):
+        r1 = random.random()
+        r2 = random.random()
+
+        if r1 < masking_proportion:
+            if r2 < 0.8:
+                replacement =
+        if data_item.mask is None:
+            data_item.mask
+
+    return data_item
+
+
+
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -121,9 +144,16 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
     for i in data_indexes:
         data_item = data[i]
-        # logger.debug(data_item.text)
         if data_item.indexes is None:
-            data_item.indexes, data_item.labels = model.lookup_ndxs(data_item.text)
+            data_item.indexes, data_item.labels = model.lookup_indexes(data_item.text)
+
+        data_item = mask_and_label_characters(data_item)
+
+        logger.debug("data item ----")
+        logger.debug(data_item.text)
+        logger.debug(data_item.indexes)
+        logger.debug(data_item.mask)
+        logger.debug(data_item.labels)
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
@@ -193,7 +223,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         model.eval()
 
         dev_loss, dev_tokens, dev_chars = train_batch(
-            model, optimizer, criterion, dev_data, dev_list, update=False
+            model, optimizer, criterion, dev_data, dev_list, update=False,
         )
 
         if epoch == 0:

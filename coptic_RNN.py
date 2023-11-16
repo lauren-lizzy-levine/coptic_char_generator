@@ -67,7 +67,9 @@ class RNN(nn.Module):
 
         return out, hidden
 
-    def lookup_ndxs(self, text, masking_proportion=0.15):
+    def lookup_indexes(self, text):
+
+        #TODO finish cleaning up
         input_indexes = self.sentence_piece.EncodeAsIds(text)
         output_indexes = [-100] * len(input_indexes)  # not sure if this is reasonable
         # mask characters in the self.mask is mask index
