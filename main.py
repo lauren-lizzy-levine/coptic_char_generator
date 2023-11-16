@@ -54,8 +54,6 @@ if __name__ == "__main__":
         sp_coptic.create_sentencepiece_model(
             csv_name, f"{model_name}.model", vocab_size=1000, train=True
         )
-        # note - this is currently running on all .tt files, including all the tags that we aren't interested in
-        # get this warning: trainer_interface.cc(122) LOG(WARNING) Too many sentences are loaded! (7535610), which may slow down training.
 
     # step 4 - model training
     if args.train:
@@ -88,6 +86,6 @@ if __name__ == "__main__":
 
         model = train_model(model, data, output_name=model_name)
 
-    logger.info(f"end generator -- {datetime.datetime.now()}")
-
     # step 5 - evaluation (accuracy metrics)
+
+    logger.info(f"end generator -- {datetime.datetime.now()}")

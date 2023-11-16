@@ -48,7 +48,10 @@ rnn_nLayers = 2
 dropout = 0.0
 # dropout = 0.1
 
-specs = [embed_size, hidden_size, proj_size, rnn_nLayers, share, dropout]
+masking_proportion = 0.15
+
+
+specs = [embed_size, hidden_size, proj_size, rnn_nLayers, share, dropout, masking_proportion]
 
 # learning_rate = 0.0001
 # learning_rate = 0.0003
@@ -78,8 +81,9 @@ nEpochs = 4
 # L2_lambda = 0.0
 L2_lambda = 0.001
 
+
 model_path = "models/"
-masking_proportion = 0.15
+MASK = "<mask>"
 
 
 class DataItem:
@@ -116,28 +120,6 @@ def read_datafile(file_name, data_list):
             #     break
 
 
-def mask_and_label_characters(data_item, masking_proportion=masking_proportion):
-    init_mask = torch.full(len(data_item.indexes), True)
-    init_labels = torch.full(len(data_item.indexes), -100)
-
-    #TODO finish this function
-
-    for i in range(len(data_item.indexes)):
-        r1 = random.random()
-        r2 = random.random()
-
-        if r1 < masking_proportion:
-            if r2 < 0.8:
-                replacement =
-        if data_item.mask is None:
-            data_item.mask
-
-    return data_item
-
-
-
-
-
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     model.zero_grad()
     total_loss, total_tokens, total_chars = 0, 0, 0
@@ -147,7 +129,7 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         if data_item.indexes is None:
             data_item.indexes, data_item.labels = model.lookup_indexes(data_item.text)
 
-        data_item = mask_and_label_characters(data_item)
+        data_item = model.mask_and_label_characters(data_item)
 
         logger.debug("data item ----")
         logger.debug(data_item.text)
@@ -208,7 +190,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                 optimizer,
                 criterion,
                 train_data,
-                train_list[i : i + ibs],
+                train_list[i: i + ibs],
                 update=True,
             )
             train_loss += loss

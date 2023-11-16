@@ -13,13 +13,14 @@ class RNN(nn.Module):
         self.unk_id = sentence_piece.piece_to_id("<unk>")
         self.bos_id = sentence_piece.piece_to_id("<s>")
         self.eos_id = sentence_piece.piece_to_id("</s>")
-        self.mask = sentence_piece.piece_to_id("<mask>")
+        # self.mask = sentence_piece.piece_to_id("<mask>")
 
         num_tokens = sentence_piece.get_piece_size()
         self.specs = specs + [num_tokens]
 
-        embed_size, hidden_size, proj_size, rnn_nLayers, self.share, dropout = specs
+        embed_size, hidden_size, proj_size, rnn_nLayers, self.share, dropout, masking_proportion = specs
         self.embed = nn.Embedding(num_tokens, embed_size)
+        self.masking_proportion = masking_proportion
 
         # if rnn_nLayers == 1: dropout = 0.0 # dropout is only applied between layers
         self.rnn = nn.LSTM(
@@ -87,3 +88,25 @@ class RNN(nn.Module):
     def decode(self, indexes):
         tokens = self.sentence_piece.decode(indexes)
         return tokens
+
+    def mask_and_label_characters(self, data_item):
+        init_mask = torch.full(len(data_item.indexes), True)
+        init_labels = torch.full(len(data_item.indexes), -100)
+
+        # TODO finish this function
+
+        for i in range(len(data_item.indexes)):
+            r1 = random.random()
+            r2 = random.random()
+
+            if r1 < self.masking_proportion:
+                if r2 < 0.8:
+                    # replace with MASK symbol
+                    replacement = MASK
+                elif r2 < 0.9:
+                    # replace with random character
+                    replacement = random.randint(100, self.vocab_size - 1)
+            if data_item.mask is None:
+                data_item.mask
+
+        return data_item
