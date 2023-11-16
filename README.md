@@ -20,4 +20,4 @@ out the `-sp` flag.
 
 ### Model Training
 
-To train 
+To train the model, add `-tr` or `--train` to the command. 

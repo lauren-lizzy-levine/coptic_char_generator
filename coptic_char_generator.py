@@ -48,7 +48,17 @@ rnn_nLayers = 2
 dropout = 0.0
 # dropout = 0.1
 
-specs = [embed_size, hidden_size, proj_size, rnn_nLayers, share, dropout]
+masking_proportion = 0.15
+
+specs = [
+    embed_size,
+    hidden_size,
+    proj_size,
+    rnn_nLayers,
+    share,
+    dropout,
+    masking_proportion,
+]
 
 # learning_rate = 0.0001
 # learning_rate = 0.0003
@@ -84,9 +94,11 @@ model_path = "models/"
 class DataItem:
     def __init__(self, text=None, indexes=None, mask=None, labels=None):
         self.text = text  # original text
-        self.indexes = indexes  # indexes of characters or tokens
-        self.mask = mask
-        self.labels = labels
+        self.indexes = indexes  # list of indexes of characters or tokens
+        self.mask = (
+            mask  # list of indexes same size as index, true when character is masked
+        )
+        self.labels = labels  # list of indexes attention mask
 
 
 def count_parameters(model):
@@ -110,20 +122,28 @@ def read_datafile(file_name, data_list):
             sentence = re.sub(r"\d+,", "", sentence)
             if len(sentence) == 0:
                 continue
-            data_list.append(DataItem(sentence))
-            # if len(data_list) > 100:
+            data_list.append(DataItem(text=sentence))
+            # if len(data_list) > 2:
             #     break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
+    # TODO update loss to be based on accuracy of predictions
     model.zero_grad()
     total_loss, total_tokens, total_chars = 0, 0, 0
 
     for i in data_indexes:
         data_item = data[i]
-        # logger.debug(data_item.text)
         if data_item.indexes is None:
-            data_item.indexes, data_item.labels = model.lookup_ndxs(data_item.text)
+            data_item.indexes = model.lookup_indexes(data_item.text)
+
+        data_item = model.mask_and_label_characters(data_item)
+
+        # logger.debug("data item ----")
+        # logger.debug(f"original text: {data_item.text}")
+        # logger.debug(f"masked indexes: {data_item.indexes}")
+        # logger.debug(f"self attn labels: {data_item.labels}")
+        # logger.debug(f"mask: {data_item.mask}")
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
@@ -193,7 +213,12 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         model.eval()
 
         dev_loss, dev_tokens, dev_chars = train_batch(
-            model, optimizer, criterion, dev_data, dev_list, update=False
+            model,
+            optimizer,
+            criterion,
+            dev_data,
+            dev_list,
+            update=False,
         )
 
         if epoch == 0:
@@ -211,7 +236,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
         seed = "ⲙ̅ⲡϥ̅ⲟⲩ"
         sample = generate(model, seed=seed, n=200, temp=0)
-        logging.info(sample)
+        logging.info(f" genertated output: {sample}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
@@ -219,9 +244,11 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
 
 def generate(model, seed="The ", n=150, temp=0):
+    # TODO update this to find <mask> tokens and fill them in instead of generating text out
+
     model.eval()
 
-    indexes, labels = model.lookup_ndxs(seed)
+    indexes = model.lookup_indexes(seed)
     # adds <s> ... </s> -- remove </s> with [:-1]
 
     index_list = indexes
@@ -246,8 +273,4 @@ def generate(model, seed="The ", n=150, temp=0):
         c, h = model([c_in], sample_hidden)
 
     text = model.decode(index_list[1:-1])  # removes <s> & </
-
-    print(text)
-    print(labels)
-
     return text

@@ -4,6 +4,8 @@ import random
 
 from coptic_utils import *
 
+MASK = "<mask>"
+
 
 class RNN(nn.Module):
     def __init__(self, sentence_piece, specs):
@@ -16,10 +18,20 @@ class RNN(nn.Module):
         self.mask = sentence_piece.piece_to_id("<mask>")
 
         num_tokens = sentence_piece.get_piece_size()
+        self.num_tokens = num_tokens
         self.specs = specs + [num_tokens]
 
-        embed_size, hidden_size, proj_size, rnn_nLayers, self.share, dropout = specs
+        (
+            embed_size,
+            hidden_size,
+            proj_size,
+            rnn_nLayers,
+            self.share,
+            dropout,
+            masking_proportion,
+        ) = specs
         self.embed = nn.Embedding(num_tokens, embed_size)
+        self.masking_proportion = masking_proportion
 
         # if rnn_nLayers == 1: dropout = 0.0 # dropout is only applied between layers
         self.rnn = nn.LSTM(
@@ -67,21 +79,44 @@ class RNN(nn.Module):
 
         return out, hidden
 
-    def lookup_ndxs(self, text, masking_proportion=0.15):
-        input_indexes = self.sentence_piece.EncodeAsIds(text)
-        output_indexes = [-100] * len(input_indexes)  # not sure if this is reasonable
-        # mask characters in the self.mask is mask index
-        for i in range(len(input_indexes)):
-            # random chance of masking
-            r = random.random()
-            if r < masking_proportion:
-                # if mask put input index in output and make input index the mask index
-                target_index = input_indexes[i]
-                input_indexes[i] = self.mask
-                output_indexes[i] = target_index
-            # else, pass
-        return input_indexes, output_indexes
+    def lookup_indexes(self, text, add_control=True):
+        indexes = self.sentence_piece.EncodeAsIds(text)
+        if add_control:
+            indexes = [self.bos_id] + indexes + [self.eos_id]
+        return indexes
 
     def decode(self, indexes):
         tokens = self.sentence_piece.decode(indexes)
         return tokens
+
+    def mask_and_label_characters(self, data_item):
+        sentence_length = len(data_item.indexes)
+        mask = [True] * sentence_length
+        labels = [-100] * sentence_length
+
+        for i in range(len(data_item.indexes)):
+            current_token = data_item.indexes[i]
+            r1 = random.random()
+            r2 = random.random()
+
+            if r1 < self.masking_proportion:
+                if r2 < 0.8:
+                    # replace with MASK symbol
+                    replacement = self.mask
+                elif r2 < 0.9:
+                    # replace with random character
+                    replacement = random.randint(100, self.num_tokens - 1)
+                else:
+                    # retain original
+                    replacement = current_token
+
+                data_item.indexes[i] = replacement
+                labels[i] = current_token
+
+            else:
+                mask[i] = False
+
+            data_item.mask = mask
+            data_item.labels = labels
+
+        return data_item
