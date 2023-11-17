@@ -21,15 +21,15 @@ share = False
 # embed_size = 20
 # embed_size = 50
 # embed_size = 100
-# embed_size = 150
-embed_size = 200
+embed_size = 150
+# embed_size = 200
 # embed_size = 300
 
 if share:
     proj_size = embed_size
 else:
-    # proj_size = 150
-    proj_size = 200
+    proj_size = 150
+    # proj_size = 200
     # proj_size = 250
     # proj_size = 350
 
@@ -234,8 +234,10 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         )
 
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
-        seed = "ⲙ̅ⲡϥ̅ⲟⲩ"
-        sample = generate(model, seed=seed, n=200, temp=0)
+        seed = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        logging.info(f"masked sentence: {seed}")
+
+        sample = fill_masks(model, seed, temp=0)
         logging.info(f" genertated output: {sample}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
@@ -243,9 +245,27 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
     return model
 
 
-def generate(model, seed="The ", n=150, temp=0):
-    # TODO update this to find <mask> tokens and fill them in instead of generating text out
+def fill_masks(model, text, temp=0):
+    indexes = model.lookup_indexes(text)
+    index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
+    sample_out, sample_hidden = model([index_tensor])
+    target = []
+    for emb in sample_out[0]:
+        scores = emb  # [0,-1]
+        if temp <= 0:
+            _, best = scores.max(0)
+            best = best.data.item()
+        else:
+            output_dist = nn.functional.softmax(scores.view(-1).div(temp))  # .exp()
+            best = torch.multinomial(output_dist, 1)[0]
+            best = best.data.item()
+        target.append(best)
+    text = model.decode(target)
+    return text
 
+
+def generate(model, seed="The ", n=150, temp=0):
+    # TODO this can probably be deleted
     model.eval()
 
     indexes = model.lookup_indexes(seed)

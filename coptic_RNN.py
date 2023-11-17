@@ -38,14 +38,16 @@ class RNN(nn.Module):
             embed_size,
             hidden_size,
             rnn_nLayers,
-            # bidirectional=True, <- want to turn this on later, once we're sure things are working
+            bidirectional=True,
             dropout=dropout,
             batch_first=True,
             proj_size=proj_size,
         )
 
         if not self.share:
-            self.out = nn.Linear(proj_size, num_tokens, bias=False)
+            self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
+
+        # TODO - figure out how to update input for share?
 
         self.dropout = nn.Dropout(dropout)
 
@@ -74,7 +76,6 @@ class RNN(nn.Module):
         if not self.share:
             out = self.out(prev)  # chars
         else:
-            logger.debug("Using embedding table as output layer...")
             out = torch.matmul(prev, torch.t(self.embed.weight))
 
         return out, hidden
@@ -105,7 +106,7 @@ class RNN(nn.Module):
                     replacement = self.mask
                 elif r2 < 0.9:
                     # replace with random character
-                    replacement = random.randint(100, self.num_tokens - 1)
+                    replacement = random.randint(3, self.num_tokens - 1)
                 else:
                     # retain original
                     replacement = current_token

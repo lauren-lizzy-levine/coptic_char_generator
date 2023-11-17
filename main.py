@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # update "file_string" with csv path, may need minor updates
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            csv_name, f"{model_name}.model", vocab_size=1000, train=True
+            csv_name, f"{model_name}", vocab_size=1000, train=True
         )
 
     # step 4 - model training
