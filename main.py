@@ -4,7 +4,6 @@ import glob
 
 import coptic_char_data
 import sp_coptic
-from coptic_utils import *
 from coptic_char_generator import *
 
 
@@ -24,11 +23,23 @@ if __name__ == "__main__":
         help="true to skip sentencepiece model training",
         action="store_true",
     )
+    # TODO - make required = True after setting up masking options
+    parser.add_argument(
+        "-m",
+        "--masking",
+        required=False,
+        help="masking strategy: random or smart",
+        action="store",
+    )
     args = parser.parse_args()
 
     logger.info(f"\nstart coptic data processing -- {datetime.datetime.now()}")
 
     # TODO - train/dev/test split (we may want to do this before step 1
+
+    # TODO - masking options here
+    # random - masking as we have right now
+    # smart - smart masking based on the
 
     # step 1 - read in data
     # TODO - create a set that has all the file names to track any duplicates
@@ -58,7 +69,7 @@ if __name__ == "__main__":
     # step 4 - model training
     if args.train:
         logger.info("Training a sentencepiece model")
-        sp = spm.SentencePieceProcessor()
+        sp = sp_coptic.spm.SentencePieceProcessor()
         sp.Load(model_path + model_name + ".model")
 
         logger.info(

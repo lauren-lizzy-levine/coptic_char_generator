@@ -1,94 +1,8 @@
-import time, os, sys, random, datetime
+import time
 from random import shuffle
 import re
 
-# import matplotlib.pyplot as plt
-import numpy as np
-import sentencepiece as spm
-import torch
-import torch.nn as nn
-
-from coptic_RNN import RNN
-from coptic_utils import *
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
-print(torch.version.__version__, device)
-
-share = False
-# share = True  # share embedding table with output layer
-
-# embed_size = 20
-# embed_size = 50
-# embed_size = 100
-embed_size = 150
-# embed_size = 200
-# embed_size = 300
-
-if share:
-    proj_size = embed_size
-else:
-    proj_size = 150
-    # proj_size = 200
-    # proj_size = 250
-    # proj_size = 350
-
-# hidden_size = 100
-# hidden_size = 150
-# hidden_size = 200
-# hidden_size = 300
-hidden_size = 400
-# hidden_size = 500
-# hidden_size = 1000
-
-rnn_nLayers = 2
-# rnn_nLayers = 3
-# rnn_nLayers = 4
-
-dropout = 0.0
-# dropout = 0.1
-
-masking_proportion = 0.15
-
-specs = [
-    embed_size,
-    hidden_size,
-    proj_size,
-    rnn_nLayers,
-    share,
-    dropout,
-    masking_proportion,
-]
-
-# learning_rate = 0.0001
-# learning_rate = 0.0003
-learning_rate = 0.001
-# learning_rate = 0.003
-# learning_rate = 0.01
-
-# initial batchsize
-# batch_size = 1
-# batch_size = 2
-# batch_size = 5
-# batch_size = 10
-batch_size = 20
-
-# increase the batchsize every epoch by this factor
-# batch_size_multiplier = 1
-# batch_size_multiplier = 1.4
-# batch_size_multiplier = 1.6
-batch_size_multiplier = 2
-
-# nEpochs = 1
-# nEpochs = 2
-nEpochs = 4
-# nEpochs = 10
-# nEpochs = 20
-
-# L2_lambda = 0.0
-L2_lambda = 0.001
-
-model_path = "models/"
+from coptic_RNN import *
 
 
 class DataItem:
@@ -98,7 +12,7 @@ class DataItem:
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
-        self.labels = labels  # list of indexes attention mask
+        self.labels = labels  # list of indexes for attention mask
 
 
 def count_parameters(model):
@@ -238,7 +152,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         logging.info(f"masked sentence: {seed}")
 
         sample = fill_masks(model, seed, temp=0)
-        logging.info(f" genertated output: {sample}")
+        logging.info(f"generated output: {sample}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
