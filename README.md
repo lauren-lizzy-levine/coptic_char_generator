@@ -8,16 +8,20 @@ Data comes from the [Coptic SCRIPTORIUM GitHub](https://github.com/CopticScripto
 is to clone the data repo into your Desktop and the data path will work without any updates or changes.
 
 ## Command Line Arguments
-
-### SentencePiece
-
 To run the project, the command is just `python main.py`
 
-To train a SentencePiece model, add `-sp` or `-sentencepiece` to the command.
+### Mask Type  (required)
+Masking can be random (15% masking) or smart (based on the text). 
+
+Add `-m <random, smart>` or `--masking <random,smart>` to the command.
+
+### SentencePiece (optional)
+
+To train a SentencePiece model, add `-sp` or `--sentencepiece` to the command.
 
 If you already have a SentencePiece model named "coptic_sp.model" and "coptic_sp.vocab" and don't need to retrain, leave
 out the `-sp` flag. 
 
-### Model Training
+### Model Training (optional)
 
 To train the model, add `-tr` or `--train` to the command. 

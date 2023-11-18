@@ -37,8 +37,8 @@ def read_datafile(file_name, data_list):
             if len(sentence) == 0:
                 continue
             data_list.append(DataItem(text=sentence))
-            # if len(data_list) > 2:
-            #     break
+            if len(data_list) > 2:
+                break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -61,8 +61,12 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
-        out, hidden = model([index_tensor])  # [:-1]
-        loss = criterion(out[0], label_tensor)  # [1:]
+        print(label_tensor)
+        out = model([index_tensor])  # [:-1]
+        print(f"out: {out.view(-1, out.shape[-1]).shape}")
+        print(f"out[0]: {out.view(-1, out.shape[-1]).shape}")
+        print(f"label: {label_tensor.view(-1).shape}")
+        loss = criterion(out.view(-1, out.shape[-1]), label_tensor.view(-1))  # [1:]
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -79,7 +83,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
 def train_model(model, train_data, dev_data=None, output_name="charLM"):
     data_list = [i for i in range(len(train_data))]
-    if dev_data == None:
+
+    if dev_data is None:
         shuffle(data_list)
         num_dev_items = min(int(0.05 * len(train_data)), 2000)
         dev_list = data_list[:num_dev_items]
@@ -102,17 +107,17 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
     for epoch in range(nEpochs):
         if epoch > 0:
             bs *= batch_size_multiplier
-        ibs = int(bs + 0.5)
+        incremental_batch_size = int(bs + 0.5)
         shuffle(train_list)
         model.train()
         train_loss, train_tokens, train_chars = 0, 0, 0
-        for i in range(0, len(train_list), ibs):
+        for i in range(0, len(train_list), incremental_batch_size):
             loss, num_tokens, num_characters = train_batch(
                 model,
                 optimizer,
                 criterion,
                 train_data,
-                train_list[i : i + ibs],
+                train_list[i : i + incremental_batch_size],
                 update=True,
             )
             train_loss += loss
@@ -144,7 +149,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         msg_trn = f"{train_loss / train_tokens:8.4f} {train_loss / train_chars:8.4f}"
         msg_dev = f"{dev_loss / dev_tokens:8.4f} {dev_loss / dev_chars:8.4f}"
         logger.info(
-            f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- ibs: {ibs:4} time elapsed: {time.time() - start:6.1f}"
+            f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- incremental_batch_size: {incremental_batch_size:4} time elapsed: {time.time() - start:6.1f}"
         )
 
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
@@ -175,36 +180,4 @@ def fill_masks(model, text, temp=0):
             best = best.data.item()
         target.append(best)
     text = model.decode(target)
-    return text
-
-
-def generate(model, seed="The ", n=150, temp=0):
-    # TODO this can probably be deleted
-    model.eval()
-
-    indexes = model.lookup_indexes(seed)
-    # adds <s> ... </s> -- remove </s> with [:-1]
-
-    index_list = indexes
-    index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
-    sample_out, sample_hidden = model([index_tensor])
-
-    for i in range(n):
-        scores = sample_out[0, -1]
-        if temp <= 0:
-            _, best = scores.max(0)
-            best = best.data.item()
-        else:
-            output_dist = nn.functional.softmax(scores.view(-1).div(temp))  # .exp()
-            best = torch.multinomial(output_dist, 1)[0]
-            best = best.data.item()
-
-        index_list.append(best)
-        if best == model.eos_id:
-            break
-
-        c_in = torch.tensor([best], dtype=torch.int64).to(device)
-        c, h = model([c_in], sample_hidden)
-
-    text = model.decode(index_list[1:-1])  # removes <s> & </
     return text

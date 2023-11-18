@@ -32,19 +32,21 @@ class RNN(nn.Module):
         self.embed = nn.Embedding(num_tokens, embed_size)
         self.masking_proportion = masking_proportion
 
-        # if rnn_nLayers == 1: dropout = 0.0 # dropout is only applied between layers
+        self.scale_up = nn.Linear(embed_size, hidden_size)
+
         self.rnn = nn.LSTM(
-            embed_size,
             hidden_size,
-            rnn_nLayers,
+            int(hidden_size / 2),
+            num_layers=rnn_nLayers,
             bidirectional=True,
             dropout=dropout,
             batch_first=True,
-            proj_size=proj_size,
         )
 
-        if not self.share:
-            self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
+        self.out = nn.Linear(hidden_size, embed_size)
+
+        # if not self.share:
+        #     self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
 
         # TODO - figure out how to update input for share?
 
@@ -58,26 +60,29 @@ class RNN(nn.Module):
                 nn.init.kaiming_normal_(p)
                 pass
 
-    def forward(self, seqs, hidden=None):
-        logger.debug(seqs)
+    def forward(self, seqs):
         num_batches = len(seqs)
         num_tokens = len(seqs[0])
         seqs = torch.cat(seqs).view(num_batches, num_tokens)
 
         embed = self.embed(seqs)
         embed = self.dropout(embed)
-        prev, hidden = self.rnn(embed, hidden)
+        embed = self.scale_up(embed)
 
-        logger.debug(hidden[0].shape)
-        logger.debug(hidden[1].shape)
+        out, _ = self.rnn(embed)
+        out = self.dropout(out)
+        print(f"B, T, hidden: {out.shape}")
+        print(f"embed: {embed.shape}")
+        embed = out + embed
 
-        prev = self.dropout(prev)
-        if not self.share:
-            out = self.out(prev)  # chars
-        else:
-            out = torch.matmul(prev, torch.t(self.embed.weight))
+        embed = self.out(embed)  # chars
+        print(f"B, T, embed: {embed.shape}")
+        output = torch.matmul(embed, torch.t(self.embed.weight))
+        print(f"B, T, vocab size: {out.shape}")
 
-        return out, hidden
+        print("-------------")
+
+        return output
 
     def lookup_indexes(self, text, add_control=True):
         indexes = self.sentence_piece.EncodeAsIds(text)
