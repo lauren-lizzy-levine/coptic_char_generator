@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 import random
 
@@ -33,19 +32,23 @@ class RNN(nn.Module):
         self.embed = nn.Embedding(num_tokens, embed_size)
         self.masking_proportion = masking_proportion
 
-        # if rnn_nLayers == 1: dropout = 0.0 # dropout is only applied between layers
+        self.scale_up = nn.Linear(embed_size, hidden_size)
+
         self.rnn = nn.LSTM(
-            embed_size,
             hidden_size,
-            rnn_nLayers,
-            # bidirectional=True, <- want to turn this on later, once we're sure things are working
+            int(hidden_size / 2),
+            num_layers=rnn_nLayers,
+            bidirectional=True,
             dropout=dropout,
             batch_first=True,
-            proj_size=proj_size,
         )
 
-        if not self.share:
-            self.out = nn.Linear(proj_size, num_tokens, bias=False)
+        self.out = nn.Linear(hidden_size, embed_size)
+
+        # if not self.share:
+        #     self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
+
+        # TODO - figure out how to update input for share?
 
         self.dropout = nn.Dropout(dropout)
 
@@ -57,27 +60,28 @@ class RNN(nn.Module):
                 nn.init.kaiming_normal_(p)
                 pass
 
-    def forward(self, seqs, hidden=None):
-        logger.debug(seqs)
+    def forward(self, seqs):
         num_batches = len(seqs)
         num_tokens = len(seqs[0])
         seqs = torch.cat(seqs).view(num_batches, num_tokens)
 
         embed = self.embed(seqs)
         embed = self.dropout(embed)
-        prev, hidden = self.rnn(embed, hidden)
+        embed = self.scale_up(embed)
 
-        logger.debug(hidden[0].shape)
-        logger.debug(hidden[1].shape)
+        out, _ = self.rnn(embed)
+        out = self.dropout(out)
+        # print(f"B, T, hidden: {out.shape}")
+        # print(f"embed: {embed.shape}")
 
-        prev = self.dropout(prev)
-        if not self.share:
-            out = self.out(prev)  # chars
-        else:
-            logger.debug("Using embedding table as output layer...")
-            out = torch.matmul(prev, torch.t(self.embed.weight))
+        embed = self.out(embed)  # chars
+        # print(f"B, T, embed: {embed.shape}")
+        output = torch.matmul(embed, torch.t(self.embed.weight))
+        # print(f"B, T, vocab size: {out.shape}")
+        #
+        # print("-------------")
 
-        return out, hidden
+        return output
 
     def lookup_indexes(self, text, add_control=True):
         indexes = self.sentence_piece.EncodeAsIds(text)
@@ -90,6 +94,7 @@ class RNN(nn.Module):
         return tokens
 
     def mask_and_label_characters(self, data_item):
+        # data_item.masked_indexes = data_item.indexes
         sentence_length = len(data_item.indexes)
         mask = [True] * sentence_length
         labels = [-100] * sentence_length
@@ -101,17 +106,22 @@ class RNN(nn.Module):
 
             if r1 < self.masking_proportion:
                 if r2 < 0.8:
+                    # print("masked")
                     # replace with MASK symbol
                     replacement = self.mask
                 elif r2 < 0.9:
+                    # print("random replacement")
                     # replace with random character
-                    replacement = random.randint(100, self.num_tokens - 1)
+                    replacement = random.randint(3, self.num_tokens - 1)
                 else:
+                    # print("orig")
                     # retain original
                     replacement = current_token
 
                 data_item.indexes[i] = replacement
                 labels[i] = current_token
+
+                # print(f"current: {current_token}, replacement: {replacement}, data_item: {data_item.masked_indexes[i]}")
 
             else:
                 mask[i] = False

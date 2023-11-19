@@ -1,104 +1,20 @@
-import time, os, sys, random, datetime
+import time
 from random import shuffle
 import re
 
-# import matplotlib.pyplot as plt
-import numpy as np
-import sentencepiece as spm
-import torch
-import torch.nn as nn
-
-from coptic_RNN import RNN
-from coptic_utils import *
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-# device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
-print(torch.version.__version__, device)
-
-share = False
-# share = True  # share embedding table with output layer
-
-# embed_size = 20
-# embed_size = 50
-# embed_size = 100
-# embed_size = 150
-embed_size = 200
-# embed_size = 300
-
-if share:
-    proj_size = embed_size
-else:
-    # proj_size = 150
-    proj_size = 200
-    # proj_size = 250
-    # proj_size = 350
-
-# hidden_size = 100
-# hidden_size = 150
-# hidden_size = 200
-# hidden_size = 300
-hidden_size = 400
-# hidden_size = 500
-# hidden_size = 1000
-
-rnn_nLayers = 2
-# rnn_nLayers = 3
-# rnn_nLayers = 4
-
-dropout = 0.0
-# dropout = 0.1
-
-masking_proportion = 0.15
-
-specs = [
-    embed_size,
-    hidden_size,
-    proj_size,
-    rnn_nLayers,
-    share,
-    dropout,
-    masking_proportion,
-]
-
-# learning_rate = 0.0001
-# learning_rate = 0.0003
-learning_rate = 0.001
-# learning_rate = 0.003
-# learning_rate = 0.01
-
-# initial batchsize
-# batch_size = 1
-# batch_size = 2
-# batch_size = 5
-# batch_size = 10
-batch_size = 20
-
-# increase the batchsize every epoch by this factor
-# batch_size_multiplier = 1
-# batch_size_multiplier = 1.4
-# batch_size_multiplier = 1.6
-batch_size_multiplier = 2
-
-# nEpochs = 1
-# nEpochs = 2
-nEpochs = 4
-# nEpochs = 10
-# nEpochs = 20
-
-# L2_lambda = 0.0
-L2_lambda = 0.001
-
-model_path = "models/"
+from coptic_RNN import *
 
 
 class DataItem:
-    def __init__(self, text=None, indexes=None, mask=None, labels=None):
+    def __init__(
+        self, text=None, indexes=None, masked_indexes=None, mask=None, labels=None
+    ):
         self.text = text  # original text
-        self.indexes = indexes  # list of indexes of characters or tokens
+        self.indexes = indexes  # tensor of indexes of characters or tokens
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
-        self.labels = labels  # list of indexes attention mask
+        self.labels = labels  # list of indexes for attention mask
 
 
 def count_parameters(model):
@@ -123,8 +39,8 @@ def read_datafile(file_name, data_list):
             if len(sentence) == 0:
                 continue
             data_list.append(DataItem(text=sentence))
-            # if len(data_list) > 2:
-            #     break
+            if len(data_list) > 10000:
+                break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -141,14 +57,14 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
         # logger.debug("data item ----")
         # logger.debug(f"original text: {data_item.text}")
-        # logger.debug(f"masked indexes: {data_item.indexes}")
+        # logger.debug(f"orig indexes: {data_item.indexes}")
         # logger.debug(f"self attn labels: {data_item.labels}")
         # logger.debug(f"mask: {data_item.mask}")
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
-        out, hidden = model([index_tensor])  # [:-1]
-        loss = criterion(out[0], label_tensor)  # [1:]
+        out = model([index_tensor])  # [:-1]
+        loss = criterion(out[0], label_tensor.view(-1))  # [1:]
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -165,7 +81,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
 def train_model(model, train_data, dev_data=None, output_name="charLM"):
     data_list = [i for i in range(len(train_data))]
-    if dev_data == None:
+
+    if dev_data is None:
         shuffle(data_list)
         num_dev_items = min(int(0.05 * len(train_data)), 2000)
         dev_list = data_list[:num_dev_items]
@@ -175,7 +92,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
 
-    criterion = nn.CrossEntropyLoss(reduction="sum")
+    criterion = nn.CrossEntropyLoss(reduction="mean")
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, weight_decay=L2_lambda
     )
@@ -188,17 +105,17 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
     for epoch in range(nEpochs):
         if epoch > 0:
             bs *= batch_size_multiplier
-        ibs = int(bs + 0.5)
+        incremental_batch_size = int(bs + 0.5)
         shuffle(train_list)
         model.train()
         train_loss, train_tokens, train_chars = 0, 0, 0
-        for i in range(0, len(train_list), ibs):
+        for i in range(0, len(train_list), incremental_batch_size):
             loss, num_tokens, num_characters = train_batch(
                 model,
                 optimizer,
                 criterion,
                 train_data,
-                train_list[i : i + ibs],
+                train_list[i : i + incremental_batch_size],
                 update=True,
             )
             train_loss += loss
@@ -230,33 +147,28 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         msg_trn = f"{train_loss / train_tokens:8.4f} {train_loss / train_chars:8.4f}"
         msg_dev = f"{dev_loss / dev_tokens:8.4f} {dev_loss / dev_chars:8.4f}"
         logger.info(
-            f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- ibs: {ibs:4} time elapsed: {time.time() - start:6.1f}"
+            f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- incremental_batch_size: {incremental_batch_size:4} time elapsed: {time.time() - start:6.1f}"
         )
 
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
-        seed = "ⲙ̅ⲡϥ̅ⲟⲩ"
-        sample = generate(model, seed=seed, n=200, temp=0)
-        logging.info(f" genertated output: {sample}")
+        seed = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        logging.info(f"masked sentence: {seed}")
+
+        sample = fill_masks(model, seed, temp=0)
+        logging.info(f"generated output: {sample}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
     return model
 
 
-def generate(model, seed="The ", n=150, temp=0):
-    # TODO update this to find <mask> tokens and fill them in instead of generating text out
-
-    model.eval()
-
-    indexes = model.lookup_indexes(seed)
-    # adds <s> ... </s> -- remove </s> with [:-1]
-
-    index_list = indexes
+def fill_masks(model, text, temp=0):
+    indexes = model.lookup_indexes(text)
     index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
-    sample_out, sample_hidden = model([index_tensor])
-
-    for i in range(n):
-        scores = sample_out[0, -1]
+    sample_out = model([index_tensor])
+    target = []
+    for emb in sample_out[0]:
+        scores = emb  # [0,-1]
         if temp <= 0:
             _, best = scores.max(0)
             best = best.data.item()
@@ -264,13 +176,6 @@ def generate(model, seed="The ", n=150, temp=0):
             output_dist = nn.functional.softmax(scores.view(-1).div(temp))  # .exp()
             best = torch.multinomial(output_dist, 1)[0]
             best = best.data.item()
-
-        index_list.append(best)
-        if best == model.eos_id:
-            break
-
-        c_in = torch.tensor([best], dtype=torch.int64).to(device)
-        c, h = model([c_in], sample_hidden)
-
-    text = model.decode(index_list[1:-1])  # removes <s> & </
+        target.append(best)
+    text = model.decode(target)
     return text

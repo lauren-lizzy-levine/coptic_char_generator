@@ -4,7 +4,6 @@ import glob
 
 import coptic_char_data
 import sp_coptic
-from coptic_utils import *
 from coptic_char_generator import *
 
 
@@ -24,9 +23,16 @@ if __name__ == "__main__":
         help="true to skip sentencepiece model training",
         action="store_true",
     )
+    parser.add_argument(
+        "-m",
+        "--masking",
+        required=True,
+        help="masking strategy: random or smart",
+        action="store",
+    )
     args = parser.parse_args()
 
-    logger.info(f"\nstart coptic data processing -- {datetime.datetime.now()}")
+    logger.info(f"start coptic data processing -- {datetime.datetime.now()}")
 
     # TODO - train/dev/test split (we may want to do this before step 1
 
@@ -45,20 +51,24 @@ if __name__ == "__main__":
     csv_name = "coptic_sentences.csv"
     model_name = "coptic_sp"
 
+    # TODO - masking options here - mask before we create sentencepiece model
+    logger.info(f"Masking type: {args.masking}")
+    # random - masking as we have right now
+    # smart - smart masking based on the text
+
     # step 2 - write to csv
     coptic_char_data.write_to_csv(csv_name, sentences)
 
     # step 3 - sentence piece (on training)
-    # update "file_string" with csv path, may need minor updates
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            csv_name, f"{model_name}.model", vocab_size=1000, train=True
+            csv_name, f"{model_name}", vocab_size=1000, train=True
         )
 
     # step 4 - model training
     if args.train:
         logger.info("Training a sentencepiece model")
-        sp = spm.SentencePieceProcessor()
+        sp = sp_coptic.spm.SentencePieceProcessor()
         sp.Load(model_path + model_name + ".model")
 
         logger.info(
@@ -75,7 +85,7 @@ if __name__ == "__main__":
             f"Load model: {args.model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
 
-    logger.debug(model)
+    logger.info(model)
     count_parameters(model)
 
     if args.train:
@@ -87,7 +97,7 @@ if __name__ == "__main__":
         model = train_model(model, data, output_name=model_name)
 
     # step 5 - evaluation (accuracy metrics)
-
     # TODO fill in evaluation
+    # f1, precision, recall = calculate_f1()
 
-    logger.info(f"end generator -- {datetime.datetime.now()}")
+    logger.info(f"end generator -- {datetime.datetime.now()}\n")
