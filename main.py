@@ -100,4 +100,4 @@ if __name__ == "__main__":
     # TODO fill in evaluation
     # f1, precision, recall = calculate_f1()
 
-    logger.info(f"end generator -- {datetime.datetime.now()}")
+    logger.info(f"end generator -- {datetime.datetime.now()}\n")

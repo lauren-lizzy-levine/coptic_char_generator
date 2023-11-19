@@ -6,9 +6,11 @@ from coptic_RNN import *
 
 
 class DataItem:
-    def __init__(self, text=None, indexes=None, mask=None, labels=None):
+    def __init__(
+        self, text=None, indexes=None, masked_indexes=None, mask=None, labels=None
+    ):
         self.text = text  # original text
-        self.indexes = indexes  # list of indexes of characters or tokens
+        self.indexes = indexes  # tensor of indexes of characters or tokens
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
@@ -37,7 +39,7 @@ def read_datafile(file_name, data_list):
             if len(sentence) == 0:
                 continue
             data_list.append(DataItem(text=sentence))
-            if len(data_list) > 2:
+            if len(data_list) > 10000:
                 break
 
 
@@ -55,18 +57,14 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
         # logger.debug("data item ----")
         # logger.debug(f"original text: {data_item.text}")
-        # logger.debug(f"masked indexes: {data_item.indexes}")
+        # logger.debug(f"orig indexes: {data_item.indexes}")
         # logger.debug(f"self attn labels: {data_item.labels}")
         # logger.debug(f"mask: {data_item.mask}")
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
-        print(label_tensor)
         out = model([index_tensor])  # [:-1]
-        print(f"out: {out.view(-1, out.shape[-1]).shape}")
-        print(f"out[0]: {out.view(-1, out.shape[-1]).shape}")
-        print(f"label: {label_tensor.view(-1).shape}")
-        loss = criterion(out.view(-1, out.shape[-1]), label_tensor.view(-1))  # [1:]
+        loss = criterion(out[0], label_tensor.view(-1))  # [1:]
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -94,7 +92,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
 
-    criterion = nn.CrossEntropyLoss(reduction="sum")
+    criterion = nn.CrossEntropyLoss(reduction="mean")
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, weight_decay=L2_lambda
     )
@@ -167,7 +165,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 def fill_masks(model, text, temp=0):
     indexes = model.lookup_indexes(text)
     index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
-    sample_out, sample_hidden = model([index_tensor])
+    sample_out = model([index_tensor])
     target = []
     for emb in sample_out[0]:
         scores = emb  # [0,-1]

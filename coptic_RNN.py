@@ -71,16 +71,15 @@ class RNN(nn.Module):
 
         out, _ = self.rnn(embed)
         out = self.dropout(out)
-        print(f"B, T, hidden: {out.shape}")
-        print(f"embed: {embed.shape}")
-        embed = out + embed
+        # print(f"B, T, hidden: {out.shape}")
+        # print(f"embed: {embed.shape}")
 
         embed = self.out(embed)  # chars
-        print(f"B, T, embed: {embed.shape}")
+        # print(f"B, T, embed: {embed.shape}")
         output = torch.matmul(embed, torch.t(self.embed.weight))
-        print(f"B, T, vocab size: {out.shape}")
-
-        print("-------------")
+        # print(f"B, T, vocab size: {out.shape}")
+        #
+        # print("-------------")
 
         return output
 
@@ -95,6 +94,7 @@ class RNN(nn.Module):
         return tokens
 
     def mask_and_label_characters(self, data_item):
+        # data_item.masked_indexes = data_item.indexes
         sentence_length = len(data_item.indexes)
         mask = [True] * sentence_length
         labels = [-100] * sentence_length
@@ -106,17 +106,22 @@ class RNN(nn.Module):
 
             if r1 < self.masking_proportion:
                 if r2 < 0.8:
+                    # print("masked")
                     # replace with MASK symbol
                     replacement = self.mask
                 elif r2 < 0.9:
+                    # print("random replacement")
                     # replace with random character
                     replacement = random.randint(3, self.num_tokens - 1)
                 else:
+                    # print("orig")
                     # retain original
                     replacement = current_token
 
                 data_item.indexes[i] = replacement
                 labels[i] = current_token
+
+                # print(f"current: {current_token}, replacement: {replacement}, data_item: {data_item.masked_indexes[i]}")
 
             else:
                 mask[i] = False
