@@ -70,6 +70,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         out = model([index_tensor])  # [:-1]
         loss = criterion(out[0], label_tensor.view(-1))  # [1:]
 
+        # why is loss occasionally nan
+
         total_loss += loss.data.item()
         total_tokens += len(out[0])
         total_chars += len(data_item.text) + 1
@@ -96,7 +98,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
 
-    criterion = nn.CrossEntropyLoss(reduction="mean")
+    criterion = nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, weight_decay=L2_lambda
     )
@@ -122,6 +124,10 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                 train_list[i : i + incremental_batch_size],
                 update=True,
             )
+            print(f"loss: {loss}")
+            print(f"num tok: {num_tokens}")
+            print(f"num char: {num_characters}")
+            # TODO maybe don't even need both tok and char with a char based model
             train_loss += loss
             train_tokens += num_tokens
             train_chars += num_characters
@@ -160,6 +166,8 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
         sample = fill_masks(model, seed, temp=0)
         logging.info(f"generated output: {sample}")
+
+        # TODO add more test lines
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
