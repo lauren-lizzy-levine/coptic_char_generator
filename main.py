@@ -49,6 +49,7 @@ if __name__ == "__main__":
     # TODO - what other information might we want to in the csv?
 
     csv_name = "coptic_sentences.csv"
+    sp_csv_name = "sp_input_coptic_sentences.csv"
     model_name = "coptic_sp"
 
     # TODO - masking options here - mask before we create sentencepiece model
@@ -58,11 +59,12 @@ if __name__ == "__main__":
 
     # step 2 - write to csv
     coptic_char_data.write_to_csv(csv_name, sentences)
+    coptic_char_data.write_to_csv(sp_csv_name, sentences, plain=True)
 
     # step 3 - sentence piece (on training)
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            csv_name, f"{model_name}", vocab_size=1000, train=True
+            sp_csv_name, f"{model_name}", vocab_size=1000, train=True
         )
 
     # step 4 - model training

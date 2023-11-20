@@ -38,7 +38,11 @@ def read_datafile(file_name, data_list):
             sentence = re.sub(r"\d+,", "", sentence)
             if len(sentence) == 0:
                 continue
+            # For now (prelim model training), skip sentences with real lacunas
+            if "[" in sentence:
+                continue
             data_list.append(DataItem(text=sentence))
+            print(sentence)
             if len(data_list) > 10000:
                 break
 

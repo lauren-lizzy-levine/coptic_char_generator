@@ -51,9 +51,16 @@ def read_datafiles(file_list):
     return sentences
 
 
-def write_to_csv(file_name, sentence_list):
-    column_names = ["index", "sentence"]
-    with open(file_name, "w") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=column_names)
-        writer.writeheader()
-        writer.writerows(sentence_list)
+def write_to_csv(file_name, sentence_list, plain=False):
+    if plain:
+        with open(file_name, "w") as csvfile:
+            for sentence in sentence_list:
+                # remove lacuna (no filler symbols in sp model)
+                sent = re.sub(r'\[.*\]', '', sentence["sentence"]) + "\n"
+                csvfile.write(sent)
+    else:
+        column_names = ["index", "sentence"]
+        with open(file_name, "w") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=column_names)
+            writer.writeheader()
+            writer.writerows(sentence_list)
