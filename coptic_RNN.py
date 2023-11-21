@@ -94,10 +94,16 @@ class RNN(nn.Module):
         return tokens
 
     def mask_and_label_characters(self, data_item):
-        # data_item.masked_indexes = data_item.indexes
+        if data_item.indexes is None:
+            data_item.indexes = self.lookup_indexes(data_item.text)
+
         sentence_length = len(data_item.indexes)
         mask = [True] * sentence_length
         labels = [-100] * sentence_length
+
+        mask_count = 0
+        random_sub = 0
+        orig_token = 0
 
         for i in range(len(data_item.indexes)):
             current_token = data_item.indexes[i]
@@ -109,14 +115,17 @@ class RNN(nn.Module):
                     # print("masked")
                     # replace with MASK symbol
                     replacement = self.mask
+                    mask_count += 1
                 elif r2 < 0.9:
                     # print("random replacement")
                     # replace with random character
                     replacement = random.randint(3, self.num_tokens - 1)
+                    random_sub += 1
                 else:
                     # print("orig")
                     # retain original
                     replacement = current_token
+                    orig_token += 1
 
                 data_item.indexes[i] = replacement
                 labels[i] = current_token
@@ -129,4 +138,7 @@ class RNN(nn.Module):
             data_item.mask = mask
             data_item.labels = labels
 
-        return data_item
+        logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
+        total_mask = mask_count + random_sub + orig_token
+
+        return data_item, total_mask
