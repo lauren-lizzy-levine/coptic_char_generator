@@ -6,9 +6,7 @@ from coptic_RNN import *
 
 
 class DataItem:
-    def __init__(
-        self, text=None, indexes=None, masked_indexes=None, mask=None, labels=None
-    ):
+    def __init__(self, text=None, indexes=None, mask=None, labels=None):
         self.text = text  # original text
         self.indexes = indexes  # tensor of indexes of characters or tokens
         self.mask = (
@@ -160,6 +158,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         )
 
         logger.info(f"dev masked: {dev_masked}")
+        accuracy_evaluation(model, dev_data, dev_list)
 
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
         prompt = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
@@ -220,7 +219,7 @@ def accuracy_evaluation(model, data, data_indexes):
         data_item = data[i]
         if data_item.indexes is None:
             data_item.indexes = model.lookup_indexes(data_item.text)
-        data_item = model.mask_and_label_characters(data_item)
+        data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
