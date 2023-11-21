@@ -177,6 +177,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample = fill_masks(model, prompt, temp=0)
 
         torch.save(model, f"{model_path}/{output_name}.pth")
+    accuracy_evaluation(model, dev_data, dev_list)
 
     return model
 
@@ -200,3 +201,38 @@ def fill_masks(model, text, temp=0):
     text = model.decode(target)
     logging.info(f"generated output: {text}")
     return text
+
+
+def accuracy_evaluation(model, data, data_indexes):
+    # first pass at simple accuracy function
+    masked_total = 0
+    correct = 0
+    for i in data_indexes:
+        # get model output
+        data_item = data[i]
+        if data_item.indexes is None:
+            data_item.indexes = model.lookup_indexes(data_item.text)
+        data_item = model.mask_and_label_characters(data_item)
+        index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+        out = model([index_tensor])
+
+        # get target indexes
+        target = []
+        for emb in out[0]:
+            scores = emb
+            _, best = scores.max(0)
+            best = best.data.item()
+            target.append(best)
+
+        # compare target to label
+        # logger.debug(f"self attn labels: {data_item.labels}")
+        # logger.debug(f"target labels: {target}")
+        assert(len(target) == len(data_item.labels))
+        for j in range(len(data_item.labels)):
+            if data_item.labels[j] > 0:
+                # masked token
+                masked_total += 1
+                if target[j] == data_item.labels[j]:
+                    # prediction is correct
+                    correct += 1
+    logging.info(f"masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {correct/masked_total}")
