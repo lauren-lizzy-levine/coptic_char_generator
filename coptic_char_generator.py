@@ -42,8 +42,8 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            if len(data_list) > 10000:
-                break
+            # if len(data_list) > 200:
+            #     break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -76,13 +76,36 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         total_tokens += len(out[0])
         total_chars += len(data_item.text) + 1
 
+        dev_masked = 0
+        dev_correct = 0
+
+        if not update:
+            target = []
+            for emb in out[0]:
+                scores = emb
+                _, best = scores.max(0)
+                best = best.data.item()
+                target.append(best)
+
+            # compare target to label
+            # logger.debug(f"self attn labels: {data_item.labels}")
+            # logger.debug(f"target labels: {target}")
+            assert len(target) == len(data_item.labels)
+            for j in range(len(data_item.labels)):
+                if data_item.labels[j] > 0:
+                    # masked token
+                    dev_masked += 1
+                    if target[j] == data_item.labels[j]:
+                        # prediction is correct
+                        dev_correct += 1
+
         if update:
             loss.backward()
 
     if update:
         optimizer.step()
 
-    return total_loss, total_tokens, total_chars, total_masked
+    return total_loss, total_tokens, total_chars, total_masked, dev_masked, dev_correct
 
 
 def train_model(model, train_data, dev_data=None, output_name="charLM"):
@@ -116,7 +139,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         model.train()
         train_loss, train_tokens, train_chars, train_mask_count = 0, 0, 0, 0
         for i in range(0, len(train_list), incremental_batch_size):
-            loss, num_tokens, num_characters, total_masked = train_batch(
+            loss, num_tokens, num_characters, total_masked, _, _ = train_batch(
                 model,
                 optimizer,
                 criterion,
@@ -136,7 +159,14 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         logger.debug(f"masked total: {train_mask_count}")
         model.eval()
 
-        dev_loss, dev_tokens, dev_chars, dev_masked = train_batch(
+        (
+            dev_loss,
+            dev_tokens,
+            dev_chars,
+            dev_masked,
+            dev_masked,
+            dev_correct,
+        ) = train_batch(
             model,
             optimizer,
             criterion,
@@ -158,29 +188,21 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         )
 
         logger.info(f"dev masked: {dev_masked}")
-        accuracy_evaluation(model, dev_data, dev_list)
-
-        logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
-        prompt = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
-        sample = fill_masks(model, prompt, temp=0)
-
         logging.info(
-            f"orig sentence: Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+            f"masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {dev_correct / dev_masked}"
         )
-        prompt = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛ<mask><mask>ⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁ<mask>ⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        sample = fill_masks(model, prompt, temp=0)
 
-        logging.info(
-            f"orig sentence: Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        )
-        prompt = "<mask>ⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥ<mask>ⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙ<mask>ⲛⲙ̅ⲙⲟϥ·"
-        sample = fill_masks(model, prompt, temp=0)
+        test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        sample = fill_masks(model, test_sentence, temp=0)
 
-        logging.info(
-            f"orig sentence: ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        )
-        prompt = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥<mask>ⲁϩⲙⲉⲧϣⲁⲧⲉ<mask><mask>ⲛⲧⲉⲓⲱⲧ·"
-        sample = fill_masks(model, prompt, temp=0)
+        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        sample = fill_masks(model, test_sentence, temp=0)
+
+        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        sample = fill_masks(model, test_sentence, temp=0)
+
+        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        sample = fill_masks(model, test_sentence, temp=0)
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
@@ -190,9 +212,9 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
 
 def fill_masks(model, text, temp=0):
-    logging.info(f"masked prompt: {text}")
-    indexes = model.lookup_indexes(text)
-    index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
+    logging.info(f"prompt: {text}")
+    data_item, _ = model.mask_and_label_characters(DataItem(text=text))
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
     sample_out = model([index_tensor])
     target = []
     for emb in sample_out[0]:
@@ -217,9 +239,9 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        if data_item.indexes is None:
-            data_item.indexes = model.lookup_indexes(data_item.text)
-        data_item, _ = model.mask_and_label_characters(data_item)
+        # if data_item.indexes is None:
+        #     data_item.indexes = model.lookup_indexes(data_item.text)
+        # data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 

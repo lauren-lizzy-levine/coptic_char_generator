@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # TODO - create a set that has all the file names to track any duplicates
 
     file_dir_path = f"{get_home_path()}/Desktop/corpora_tt/"
-    file_list = glob.glob(f"{file_dir_path}*/*.tt")
+    file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
     file_string = ",".join(file_list)
     logging.info(f"Files found: {len(file_list)}")
     sentences = coptic_char_data.read_datafiles(file_list)

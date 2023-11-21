@@ -5,7 +5,7 @@ Repository for character based generation of Coptic for reconstruction of Coptic
 ## Data Path
 
 Data comes from the [Coptic SCRIPTORIUM GitHub](https://github.com/CopticScriptorium/corpora). The recommended file path
-is to clone the data repo into your Desktop and the data path will work without any updates or changes.
+is to clone the data repo into your Desktop, unzip the `sahidic.ot` and `sahidica.nt` files, and the data path will work without any updates or changes.
 
 ## Command Line Arguments
 To run the project, the command is just `python main.py`
