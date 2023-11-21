@@ -42,8 +42,8 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            # if len(data_list) > 200:
-            #     break
+            if len(data_list) > 200:
+                break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -213,8 +213,11 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
 def fill_masks(model, text, temp=0):
     logging.info(f"prompt: {text}")
-    data_item, _ = model.mask_and_label_characters(DataItem(text=text))
+    test_data_item = DataItem(text=text)
+    logging.info(model.lookup_indexes(test_data_item.text))
+    data_item, _ = model.mask_and_label_characters(test_data_item)
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    logging.info(f"masked: {data_item.indexes}")
     sample_out = model([index_tensor])
     target = []
     for emb in sample_out[0]:
@@ -239,9 +242,9 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        # if data_item.indexes is None:
-        #     data_item.indexes = model.lookup_indexes(data_item.text)
-        # data_item, _ = model.mask_and_label_characters(data_item)
+        if data_item.indexes is None:
+            data_item.indexes = model.lookup_indexes(data_item.text)
+        data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
