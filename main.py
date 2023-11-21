@@ -98,8 +98,4 @@ if __name__ == "__main__":
 
         model = train_model(model, data, output_name=model_name)
 
-    # step 5 - evaluation (accuracy metrics)
-    # TODO fill in evaluation
-    # f1, precision, recall = calculate_f1()
-
     logger.info(f"end generator -- {datetime.datetime.now()}\n")

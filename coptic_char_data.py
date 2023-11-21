@@ -11,7 +11,7 @@ def read_datafiles(file_list):
         with open(file_name, "r") as f:
             file_text = f.read()
             tt_file = file_text.strip().split("\n")
-            logger.debug(f"Total lines in {file_name}: {len(tt_file)}")
+            # logger.debug(f"Total lines in {file_name}: {len(tt_file)}")
 
             temp_sentence = ""
             temp_orig_group_content = ""
@@ -56,7 +56,7 @@ def write_to_csv(file_name, sentence_list, plain=False):
         with open(file_name, "w") as csvfile:
             for sentence in sentence_list:
                 # remove lacuna (no filler symbols in sp model)
-                sent = re.sub(r'\[.*\]', '', sentence["sentence"]) + "\n"
+                sent = re.sub(r"\[.*\]", "", sentence["sentence"]) + "\n"
                 csvfile.write(sent)
     else:
         column_names = ["index", "sentence"]

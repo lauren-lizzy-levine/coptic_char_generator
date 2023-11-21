@@ -14,6 +14,7 @@ class DataItem:
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
+        # TODO - i'm not sure what the masks even do, we don't seem to use this?
         self.labels = labels  # list of indexes for attention mask
 
 
@@ -42,13 +43,12 @@ def read_datafile(file_name, data_list):
             if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
-            print(sentence)
+            # print(sentence)
             if len(data_list) > 10000:
                 break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
-    # TODO update loss to be based on accuracy of predictions
     model.zero_grad()
     total_loss, total_tokens, total_chars = 0, 0, 0
 
@@ -69,8 +69,6 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
         out = model([index_tensor])  # [:-1]
         loss = criterion(out[0], label_tensor.view(-1))  # [1:]
-
-        # why is loss occasionally nan
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -124,10 +122,6 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                 train_list[i : i + incremental_batch_size],
                 update=True,
             )
-            print(f"loss: {loss}")
-            print(f"num tok: {num_tokens}")
-            print(f"num char: {num_characters}")
-            # TODO maybe don't even need both tok and char with a char based model
             train_loss += loss
             train_tokens += num_tokens
             train_chars += num_characters
@@ -161,13 +155,26 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         )
 
         logging.info(f"orig sentence: ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·")
-        seed = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
-        logging.info(f"masked sentence: {seed}")
+        prompt = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣ<mask>ϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟ<mask>ⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        sample = fill_masks(model, prompt, temp=0)
 
-        sample = fill_masks(model, seed, temp=0)
-        logging.info(f"generated output: {sample}")
+        logging.info(
+            f"orig sentence: Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        )
+        prompt = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛ<mask><mask>ⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁ<mask>ⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        sample = fill_masks(model, prompt, temp=0)
 
-        # TODO add more test lines
+        logging.info(
+            f"orig sentence: Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        )
+        prompt = "<mask>ⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥ<mask>ⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙ<mask>ⲛⲙ̅ⲙⲟϥ·"
+        sample = fill_masks(model, prompt, temp=0)
+
+        logging.info(
+            f"orig sentence: ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        )
+        prompt = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥<mask>ⲁϩⲙⲉⲧϣⲁⲧⲉ<mask><mask>ⲛⲧⲉⲓⲱⲧ·"
+        sample = fill_masks(model, prompt, temp=0)
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
@@ -175,6 +182,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
 
 def fill_masks(model, text, temp=0):
+    logging.info(f"masked prompt: {text}")
     indexes = model.lookup_indexes(text)
     index_tensor = torch.tensor(indexes, dtype=torch.int64).to(device)
     sample_out = model([index_tensor])
@@ -190,4 +198,5 @@ def fill_masks(model, text, temp=0):
             best = best.data.item()
         target.append(best)
     text = model.decode(target)
+    logging.info(f"generated output: {text}")
     return text

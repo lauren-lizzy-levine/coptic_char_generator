@@ -15,11 +15,12 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     params = params + " --model_type=char"
 
     # params = params + ' --pad_id=3'					# include <pad> control symbol
-    params = params + " --control_symbols=<mask>"  # ,<oov>'
-    # params = params + " --user_defined_symbols=<mask>"  # ,<oov>'
+    # params = params + " --control_symbols=<mask>"  # ,<oov>'
+    params = params + " --user_defined_symbols=<mask>"  # ,<oov>'
 
     # trains a vocabulary and write 2 files: ./models/coptic_sp.model and ./models/coptic_sp.vocab
     if train:
+        logger.info(f"sp params: {params}")
         spm.SentencePieceTrainer.Train(params)
 
     # load and test of model
