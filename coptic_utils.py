@@ -5,7 +5,7 @@ import sys
 import torch
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 
 stdout_handler = logging.StreamHandler(sys.stdout)
@@ -83,8 +83,8 @@ batch_size_multiplier = 1.4
 # batch_size_multiplier = 2
 
 # nEpochs = 1
-# nEpochs = 2
-nEpochs = 4
+nEpochs = 2
+# nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
 
@@ -99,10 +99,3 @@ print(f"torch version & device: {torch.version.__version__, device}")
 
 def get_home_path():
     return os.path.expanduser("~")
-
-
-def calculate_f1(num_true_positive, num_positive_guess, num_positive_real):
-    precision = num_true_positive / num_positive_guess
-    recall = num_true_positive / num_positive_real
-    f1 = 2 * precision * recall / (precision + recall)
-    return f1, precision, recall
