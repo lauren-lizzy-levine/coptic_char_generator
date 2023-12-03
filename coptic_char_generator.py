@@ -42,7 +42,7 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            if len(data_list) > 200:
+            if len(data_list) > 500:
                 break
 
 
@@ -70,7 +70,13 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
         out = model([index_tensor])  # [:-1]
-        loss = criterion(out[0], label_tensor.view(-1))  # [1:]
+        # splice out just predicted indexes to go into loss
+        masked_idx = torch.BoolTensor(data_item.mask)
+        masked_out = out[0, masked_idx]
+        masked_label = label_tensor[masked_idx]
+        #logging.info(f"masked label: {masked_label}")
+        #loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
+        loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
@@ -215,9 +221,10 @@ def fill_masks(model, text, temp=0):
     logging.info(f"prompt: {text}")
     test_data_item = DataItem(text=text)
     logging.info(model.lookup_indexes(test_data_item.text))
+    unmasked_indexes = model.lookup_indexes(test_data_item.text)
     data_item, _ = model.mask_and_label_characters(test_data_item)
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
-    logging.info(f"masked: {data_item.indexes}")
+    logging.info(f"masked: {data_item.mask}")
     sample_out = model([index_tensor])
     target = []
     for emb in sample_out[0]:
@@ -230,9 +237,15 @@ def fill_masks(model, text, temp=0):
             best = torch.multinomial(output_dist, 1)[0]
             best = best.data.item()
         target.append(best)
-    text = model.decode(target)
-    logging.info(f"generated output: {text}")
-    return text
+    target_text = model.decode(target)
+    logging.info(f"generated output: {target_text}")
+    # input vs masked pairs
+    pairs = []
+    for i in range((len(data_item.mask))):
+        if data_item.mask[i]:
+            pairs.append((model.decode(data_item.labels[i]), model.decode(target[i])))
+    logging.info(f"orig vs predicted char: {pairs}")
+    return target_text
 
 
 def accuracy_evaluation(model, data, data_indexes):
