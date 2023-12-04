@@ -47,8 +47,10 @@ def read_datafiles(file_list):
                         new_sentence_detected = False
                     else:
                         temp_sentence += temp_orig_group_content
+
+            punctuation = "̅▁"
             sentences.append({"index": len(sentences), "sentence": temp_sentence})
-    return sentences
+    return sentences, punctuation
 
 
 def write_to_csv(file_name, sentence_list, plain=False):

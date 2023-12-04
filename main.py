@@ -43,8 +43,9 @@ if __name__ == "__main__":
     file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
     file_string = ",".join(file_list)
     logging.info(f"Files found: {len(file_list)}")
-    sentences = coptic_char_data.read_datafiles(file_list)
+    sentences, punctuation = coptic_char_data.read_datafiles(file_list)
     logger.info(f"File read: {len(sentences)} sentences")
+    logger.info(f"Punctation filtered out: {punctuation}")
 
     # TODO - what other information might we want to in the csv?
 

@@ -42,7 +42,7 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            if len(data_list) > 500:
+            if len(data_list) > 5000:
                 break
 
 
@@ -74,8 +74,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         masked_idx = torch.BoolTensor(data_item.mask)
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
-        #logging.info(f"masked label: {masked_label}")
-        #loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
+        # logging.info(f"masked label: {masked_label}")
+        # loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
         loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
@@ -224,7 +224,7 @@ def fill_masks(model, text, temp=0):
     unmasked_indexes = model.lookup_indexes(test_data_item.text)
     data_item, _ = model.mask_and_label_characters(test_data_item)
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
-    logging.info(f"masked: {data_item.mask}")
+    # logging.info(f"masked: {data_item.mask}")
     sample_out = model([index_tensor])
     target = []
     for emb in sample_out[0]:
@@ -241,10 +241,13 @@ def fill_masks(model, text, temp=0):
     logging.info(f"generated output: {target_text}")
     # input vs masked pairs
     pairs = []
+    pairs_index = []
     for i in range((len(data_item.mask))):
         if data_item.mask[i]:
             pairs.append((model.decode(data_item.labels[i]), model.decode(target[i])))
+            pairs_index.append((data_item.labels[i], target[i]))
     logging.info(f"orig vs predicted char: {pairs}")
+    logging.info(f"orig vs predicted char: {pairs_index}")
     return target_text
 
 
@@ -281,5 +284,5 @@ def accuracy_evaluation(model, data, data_indexes):
                     # prediction is correct
                     correct += 1
     logging.info(
-        f"masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {correct/masked_total}"
+        f"masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
     )
