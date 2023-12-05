@@ -3,6 +3,7 @@ from random import shuffle
 import re
 
 from coptic_RNN import *
+import coptic_utils as utils
 
 
 class DataItem:
@@ -42,8 +43,8 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            if len(data_list) > 5000:
-                break
+            # if len(data_list) > 5000:
+            #     break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -199,15 +200,19 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         )
 
         test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
         sample = fill_masks(model, test_sentence, temp=0)
 
         test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
         sample = fill_masks(model, test_sentence, temp=0)
 
         test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
         sample = fill_masks(model, test_sentence, temp=0)
 
         test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
         sample = fill_masks(model, test_sentence, temp=0)
 
         torch.save(model, f"{model_path}/{output_name}.pth")

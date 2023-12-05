@@ -43,9 +43,8 @@ if __name__ == "__main__":
     file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
     file_string = ",".join(file_list)
     logging.info(f"Files found: {len(file_list)}")
-    sentences, punctuation = coptic_char_data.read_datafiles(file_list)
-    logger.info(f"File read: {len(sentences)} sentences")
-    logger.info(f"Punctation filtered out: {punctuation}")
+    sentences = coptic_char_data.read_datafiles(file_list)
+    logger.info(f"Files read: {len(sentences)} sentences")
 
     # TODO - what other information might we want to in the csv?
 
@@ -83,9 +82,9 @@ if __name__ == "__main__":
         model = model.to(device)
     else:
         logger.info(f"Using a pre-trained model")
-        model = torch.load(model_path + model_name, map_location=device)
+        model = torch.load(model_path + model_name + ".pth", map_location=device)
         logger.info(
-            f"Load model: {args.model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
+            f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
 
     logger.info(model)

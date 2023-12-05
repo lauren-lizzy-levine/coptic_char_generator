@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import unicodedata
 
 import torch
 
@@ -99,3 +100,18 @@ print(f"torch version & device: {torch.version.__version__, device}")
 
 def get_home_path():
     return os.path.expanduser("~")
+
+
+UNICODE_MARK_NONSPACING = "Mn"
+MN_KEEP_LIST = ["COMBINING DOT BELOW"]
+
+
+def filter_diacritics(string):
+    new_string = ""
+    for character in string:
+        if (
+            unicodedata.category(character) != UNICODE_MARK_NONSPACING
+            or unicodedata.name(character) in MN_KEEP_LIST
+        ):
+            new_string = new_string + character
+    return new_string

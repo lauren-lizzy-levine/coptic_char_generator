@@ -1,7 +1,7 @@
 import csv
 import regex as re
 
-from coptic_utils import *
+import coptic_utils as utils
 
 
 def read_datafiles(file_list):
@@ -48,9 +48,9 @@ def read_datafiles(file_list):
                     else:
                         temp_sentence += temp_orig_group_content
 
-            punctuation = "̅▁"
+            temp_sentence = utils.filter_diacritics(temp_sentence)
             sentences.append({"index": len(sentences), "sentence": temp_sentence})
-    return sentences, punctuation
+    return sentences
 
 
 def write_to_csv(file_name, sentence_list, plain=False):
