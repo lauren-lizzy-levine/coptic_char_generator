@@ -43,8 +43,8 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            if len(data_list) > 5000:
-                break
+            # if len(data_list) > 5000:
+            #     break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
