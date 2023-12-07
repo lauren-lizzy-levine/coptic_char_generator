@@ -237,12 +237,10 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 def fill_masks(model, text, temp=0):
     logging.info(f"prompt: {text}")
     test_data_item = DataItem(text=text)
-    # logging.info(model.lookup_indexes(test_data_item.text))
-    unmasked_indexes = model.lookup_indexes(test_data_item.text)
     data_item, _ = model.mask_and_label_characters(test_data_item)
-    index_tensor = torch.tensor(unmasked_indexes, dtype=torch.int64).to(device)
-    # logging.info(f"masked: {data_item.mask}")
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
     sample_out = model([index_tensor])
+
     target = []
     for emb in sample_out[0]:
         scores = emb  # [0,-1]
@@ -254,8 +252,9 @@ def fill_masks(model, text, temp=0):
             best = torch.multinomial(output_dist, 1)[0]
             best = best.data.item()
         target.append(best)
+
     target_text = model.decode(target)
-    # logging.info(f"generated output: {target_text}")
+
     # input vs masked pairs
     pairs = []
     pairs_index = []
