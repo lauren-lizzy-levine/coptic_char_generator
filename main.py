@@ -94,6 +94,6 @@ if __name__ == "__main__":
         read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
 
-        model = train_model(model, data, output_name=model_name)
+        model = train_model(model, data, dev_data=data, output_name=model_name)
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")

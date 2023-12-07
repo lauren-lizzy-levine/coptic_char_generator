@@ -42,9 +42,24 @@ def read_datafile(file_name, data_list):
             if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
-            # print(sentence)
-            # if len(data_list) > 5000:
+            # if len(data_list) > 20:
             #     break
+
+
+def check_accuracy(target, orig_data_item):
+    masked = 0
+    correct = 0
+
+    assert len(target) == len(orig_data_item.labels)
+    for j in range(len(orig_data_item.labels)):
+        if orig_data_item.labels[j] > 0:
+            # masked token
+            masked += 1
+            if target[j] == orig_data_item.labels[j]:
+                # prediction is correct
+                correct += 1
+
+    return masked, correct
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -52,6 +67,9 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     total_loss, total_tokens, total_chars = 0, 0, 0
 
     total_masked = 0
+
+    dev_masked = 0
+    dev_correct = 0
 
     for i in data_indexes:
         data_item = data[i]
@@ -73,6 +91,17 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         out = model([index_tensor])  # [:-1]
         # splice out just predicted indexes to go into loss
         masked_idx = torch.BoolTensor(data_item.mask)
+
+        # target = []
+        # for emb in out[0]:
+        #     scores = emb
+        #     _, best = scores.max(0)
+        #     best = best.data.item()
+        #     target.append(best)
+        #
+        # masked, correct = check_accuracy(target, data_item)
+        # logger.info(f"training accuracy: {round(correct / masked, 3)}")
+
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
         # logging.info(f"masked label: {masked_label}")
@@ -82,9 +111,6 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         total_loss += loss.data.item()
         total_tokens += len(out[0])
         total_chars += len(data_item.text) + 1
-
-        dev_masked = 0
-        dev_correct = 0
 
         if not update:
             target = []
@@ -97,14 +123,7 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
             # compare target to label
             # logger.debug(f"self attn labels: {data_item.labels}")
             # logger.debug(f"target labels: {target}")
-            assert len(target) == len(data_item.labels)
-            for j in range(len(data_item.labels)):
-                if data_item.labels[j] > 0:
-                    # masked token
-                    dev_masked += 1
-                    if target[j] == data_item.labels[j]:
-                        # prediction is correct
-                        dev_correct += 1
+            dev_masked, dev_correct = check_accuracy(target, data_item)
 
         if update:
             loss.backward()
@@ -194,9 +213,8 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- incremental_batch_size: {incremental_batch_size:4} time elapsed: {time.time() - start:6.1f}"
         )
 
-        logger.info(f"dev masked: {dev_masked}")
         logging.info(
-            f"masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {round(dev_correct / dev_masked, 3)}"
+            f"dev masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {round(dev_correct / dev_masked, 3)}"
         )
 
         test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
@@ -225,10 +243,10 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 def fill_masks(model, text, temp=0):
     logging.info(f"prompt: {text}")
     test_data_item = DataItem(text=text)
-    logging.info(model.lookup_indexes(test_data_item.text))
+    # logging.info(model.lookup_indexes(test_data_item.text))
     unmasked_indexes = model.lookup_indexes(test_data_item.text)
     data_item, _ = model.mask_and_label_characters(test_data_item)
-    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    index_tensor = torch.tensor(unmasked_indexes, dtype=torch.int64).to(device)
     # logging.info(f"masked: {data_item.mask}")
     sample_out = model([index_tensor])
     target = []
@@ -243,7 +261,7 @@ def fill_masks(model, text, temp=0):
             best = best.data.item()
         target.append(best)
     target_text = model.decode(target)
-    logging.info(f"generated output: {target_text}")
+    # logging.info(f"generated output: {target_text}")
     # input vs masked pairs
     pairs = []
     pairs_index = []
@@ -260,6 +278,7 @@ def accuracy_evaluation(model, data, data_indexes):
     # first pass at simple accuracy function
     masked_total = 0
     correct = 0
+
     for i in data_indexes:
         # get model output
         data_item = data[i]
@@ -277,17 +296,10 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
-        # compare target to label
-        # logger.debug(f"self attn labels: {data_item.labels}")
-        # logger.debug(f"target labels: {target}")
-        assert len(target) == len(data_item.labels)
-        for j in range(len(data_item.labels)):
-            if data_item.labels[j] > 0:
-                # masked token
-                masked_total += 1
-                if target[j] == data_item.labels[j]:
-                    # prediction is correct
-                    correct += 1
+        masked, correct_guess = check_accuracy(target, data_item)
+        masked_total += masked
+        correct += correct_guess
+
     logging.info(
-        f"masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
+        f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
     )
