@@ -67,27 +67,29 @@ specs = [
 # learning_rate = 0.0001
 learning_rate = 0.0003
 # learning_rate = 0.001
-# learning_rate = 0.003
+learning_rate = 0.003
 # learning_rate = 0.01
 
 # initial batch size
-# batch_size = 1
+batch_size = 1
 # batch_size = 2
-batch_size = 5
+#
+# batch_size = 5
 # batch_size = 10
 # batch_size = 20
 
 # increase the batch size every epoch by this factor
-# batch_size_multiplier = 1
-batch_size_multiplier = 1.4
+batch_size_multiplier = 1
+# batch_size_multiplier = 1.4
 # batch_size_multiplier = 1.6
 # batch_size_multiplier = 2
 
-# nEpochs = 1
-# nEpochs = 2
+nEpochs = 1
+nEpochs = 2
 # nEpochs = 4
-# nEpochs = 10
-# nEpochs = 20
+#nEpochs = 10
+#nEpochs = 20
+#nEpochs = 30
 
 # L2_lambda = 0.0
 L2_lambda = 0.001

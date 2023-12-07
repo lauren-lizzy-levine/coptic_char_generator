@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # step 3 - sentence piece (on training)
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            csv_name, f"{model_name}", vocab_size=1000, train=True
+            "sp_input_coptic_sentences_test.csv", f"{model_name}", vocab_size=1000, train=True
         )
 
     # step 4 - model training
@@ -89,11 +89,16 @@ if __name__ == "__main__":
     count_parameters(model)
 
     if args.train:
+        csv_name = "coptic_sentences_test.csv"
+        dev_csv_name = "dev_test.csv"
         data = []
+        dev_data = []
         file_path = f"./" + csv_name
+        dev_file_path = f"./" + dev_csv_name
         read_datafile(file_path, data)
+        read_datafile(dev_file_path, dev_data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
 
-        model = train_model(model, data, output_name=model_name)
+        model = train_model(model, data, dev_data, output_name=model_name)
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")

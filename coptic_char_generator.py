@@ -7,8 +7,9 @@ import coptic_utils as utils
 
 
 class DataItem:
-    def __init__(self, text=None, indexes=None, mask=None, labels=None):
+    def __init__(self, text=None, orig_indexes=None, indexes=None, mask=None, labels=None):
         self.text = text  # original text
+        self.orig_indexes = orig_indexes # indexes before masking
         self.indexes = indexes  # tensor of indexes of characters or tokens
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
@@ -56,15 +57,17 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     for i in data_indexes:
         data_item = data[i]
 
-        if data_item.indexes is None:
-            data_item.indexes = model.lookup_indexes(data_item.text)
+        #if data_item.orig_indexes is None:
+        #    data_item.orig_indexes = model.lookup_indexes(data_item.text)
+        #data_item.indexes = data_item.orig_indexes
 
-        data_item, mask_count = model.mask_and_label_characters(data_item)
-        total_masked += mask_count
+        #data_item, mask_count = model.mask_and_label_characters(data_item)
+        #total_masked += mask_count
 
         # logger.debug("data item ----")
         # logger.debug(f"original text: {data_item.text}")
-        # logger.debug(f"orig indexes: {data_item.indexes}")
+        # logger.debug(f"orig indexes: {data_item.orig_indexes}")
+        # logger.debug(f"masked indexes: {data_item.indexes}")
         # logger.debug(f"self attn labels: {data_item.labels}")
         # logger.debug(f"mask: {data_item.mask}")
 
@@ -75,8 +78,9 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         masked_idx = torch.BoolTensor(data_item.mask)
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
-        # logging.info(f"masked label: {masked_label}")
-        # loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
+        logging.info(f"masked label: {masked_label}")
+        #logging.info(f"masked out: {masked_out}")
+        #loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
         loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
@@ -127,6 +131,17 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
     else:
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
+
+    # trying to just do masking once?
+    for i in data_list:
+        data_item = train_data[i]
+
+        if data_item.orig_indexes is None:
+            data_item.orig_indexes = model.lookup_indexes(data_item.text)
+        data_item.indexes = data_item.orig_indexes
+
+        data_item, mask_count = model.mask_and_label_characters(data_item)
+    dev_data = train_data # let's just make dev the training data -> it should definitely be able to predict that
 
     criterion = nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.AdamW(
@@ -263,8 +278,8 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        if data_item.indexes is None:
-            data_item.indexes = model.lookup_indexes(data_item.text)
+        #if data_item.indexes is None:
+        data_item.indexes = model.lookup_indexes(data_item.text)
         data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
@@ -273,18 +288,22 @@ def accuracy_evaluation(model, data, data_indexes):
         target = []
         for emb in out[0]:
             scores = emb
+            #logger.debug(f"scores: {scores}")
             _, best = scores.max(0)
+            #logger.debug(f"best: {best}")
             best = best.data.item()
+            #logger.debug(f"best item: {best}")
             target.append(best)
-
         # compare target to label
-        # logger.debug(f"self attn labels: {data_item.labels}")
-        # logger.debug(f"target labels: {target}")
+        #logger.debug(f"self attn labels: {data_item.labels}")
+        #logger.debug(f"target labels: {target}")
         assert len(target) == len(data_item.labels)
         for j in range(len(data_item.labels)):
             if data_item.labels[j] > 0:
                 # masked token
                 masked_total += 1
+                #logger.debug(f"actual labels: {data_item.labels[j]}")
+                #logger.debug(f"prediction: {target[j]}")
                 if target[j] == data_item.labels[j]:
                     # prediction is correct
                     correct += 1
