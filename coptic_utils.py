@@ -84,7 +84,7 @@ batch_size_multiplier = 1.4
 # batch_size_multiplier = 2
 
 # nEpochs = 1
-nEpochs = 2
+# nEpochs = 2
 # nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
@@ -114,4 +114,4 @@ def filter_diacritics(string):
             or unicodedata.name(character) in MN_KEEP_LIST
         ):
             new_string = new_string + character
-    return new_string
+    return new_string.lower()

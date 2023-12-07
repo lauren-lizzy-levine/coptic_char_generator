@@ -43,8 +43,8 @@ def read_datafile(file_name, data_list):
                 continue
             data_list.append(DataItem(text=sentence))
             # print(sentence)
-            # if len(data_list) > 5000:
-            #     break
+            if len(data_list) > 5000:
+                break
 
 
 def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
@@ -196,7 +196,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
         logger.info(f"dev masked: {dev_masked}")
         logging.info(
-            f"masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {dev_correct / dev_masked}"
+            f"masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {round(dev_correct / dev_masked, 3)}"
         )
 
         test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
