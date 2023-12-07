@@ -52,7 +52,7 @@ rnn_nLayers = 2
 dropout = 0.0
 # dropout = 0.1
 
-masking_proportion = 0.05
+masking_proportion = 0.15
 
 specs = [
     embed_size,
@@ -88,7 +88,8 @@ batch_size_multiplier = 1
 # nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
-nEpochs = 30
+# nEpochs = 30
+nEpochs = 50
 
 L2_lambda = 0.0
 # L2_lambda = 0.001
