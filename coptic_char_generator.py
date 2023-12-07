@@ -74,33 +74,14 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     for i in data_indexes:
         data_item = data[i]
 
-        if data_item.indexes is None:
-            data_item.indexes = model.lookup_indexes(data_item.text)
-
         data_item, mask_count = model.mask_and_label_characters(data_item)
         total_masked += mask_count
-
-        # logger.debug("data item ----")
-        # logger.debug(f"original text: {data_item.text}")
-        # logger.debug(f"orig indexes: {data_item.indexes}")
-        # logger.debug(f"self attn labels: {data_item.labels}")
-        # logger.debug(f"mask: {data_item.mask}")
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
         out = model([index_tensor])  # [:-1]
         # splice out just predicted indexes to go into loss
         masked_idx = torch.BoolTensor(data_item.mask)
-
-        # target = []
-        # for emb in out[0]:
-        #     scores = emb
-        #     _, best = scores.max(0)
-        #     best = best.data.item()
-        #     target.append(best)
-        #
-        # masked, correct = check_accuracy(target, data_item)
-        # logger.info(f"training accuracy: {round(correct / masked, 3)}")
 
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
@@ -217,21 +198,34 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             f"dev masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {round(dev_correct / dev_masked, 3)}"
         )
 
+        sample_masked = 0
+        sample_correct = 0
+
         test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        sample = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
 
         test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        sample = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
 
         test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        sample = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
 
         test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        sample = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
+
+        logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
@@ -271,7 +265,10 @@ def fill_masks(model, text, temp=0):
             pairs_index.append((data_item.labels[i], target[i]))
     logging.info(f"orig vs predicted char: {pairs}")
     logging.info(f"orig vs predicted char: {pairs_index}")
-    return target_text
+
+    sample_masked, sample_correct = check_accuracy(target, test_data_item)
+    logging.info(f"accuracy for this sample: {round(sample_correct/sample_masked,3)}")
+    return target_text, sample_masked, sample_correct
 
 
 def accuracy_evaluation(model, data, data_indexes):
@@ -282,8 +279,6 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        if data_item.indexes is None:
-            data_item.indexes = model.lookup_indexes(data_item.text)
         data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
