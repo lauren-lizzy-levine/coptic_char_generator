@@ -13,7 +13,6 @@ class DataItem:
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
-        # TODO - i'm not sure what the masks even do, we don't seem to use this?
         self.labels = labels  # list of indexes for attention mask
 
 
@@ -94,7 +93,9 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         total_tokens += len(out[0])
         total_chars += len(data_item.text) + 1
 
-        if not update:
+        if update:
+            loss.backward()
+        else:
             target = []
             for emb in out[0]:
                 scores = emb
@@ -106,9 +107,6 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
             # logger.debug(f"self attn labels: {data_item.labels}")
             # logger.debug(f"target labels: {target}")
             dev_masked, dev_correct = check_accuracy(target, data_item)
-
-        if update:
-            loss.backward()
 
     if update:
         optimizer.step()
@@ -129,7 +127,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
 
-    criterion = nn.CrossEntropyLoss(reduction="sum")
+    criterion = nn.CrossEntropyLoss(reduction="mean")
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, weight_decay=L2_lambda
     )
@@ -144,6 +142,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             bs *= batch_size_multiplier
         incremental_batch_size = int(bs + 0.5)
         shuffle(train_list)
+
         model.train()
         train_loss, train_tokens, train_chars, train_mask_count = 0, 0, 0, 0
         for i in range(0, len(train_list), incremental_batch_size):
@@ -165,8 +164,8 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                     f"{epoch:4} {i:6} {num_tokens:5} {num_characters:6} loss {loss / num_tokens:7.3f} {loss / num_characters:7.3f} -- tot tr loss: {train_loss / train_tokens:8.4f} {train_loss / train_chars:8.4f}"
                 )
         logger.debug(f"masked total: {train_mask_count}")
-        model.eval()
 
+        model.eval()
         (
             dev_loss,
             dev_tokens,
@@ -208,29 +207,29 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample_masked += masked
         sample_correct += correct
 
-        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-        #
-        # test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-        #
-        # test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-        #
-        # test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
+        test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
+
+        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
+
+        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
+
+        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
+        _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        sample_masked += masked
+        sample_correct += correct
 
         logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
@@ -274,12 +273,6 @@ def fill_masks(model, text, temp=0):
     logging.info(f"orig vs predicted char: {pairs_index}")
 
     sample_masked, sample_correct = check_accuracy(target, test_data_item)
-    # if sample_masked > 0:
-    #     logging.info(
-    #         f"accuracy for this sample: {round(sample_correct/sample_masked,3)}"
-    #     )
-    # else:
-    #     logging.info(f"no masks for this sample")
     return target_text, sample_masked, sample_correct
 
 
