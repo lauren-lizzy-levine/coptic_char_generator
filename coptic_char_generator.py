@@ -267,12 +267,12 @@ def fill_masks(model, text, temp=0):
     logging.info(f"orig vs predicted char: {pairs_index}")
 
     sample_masked, sample_correct = check_accuracy(target, test_data_item)
-    if sample_masked > 0:
-        logging.info(
-            f"accuracy for this sample: {round(sample_correct/sample_masked,3)}"
-        )
-    else:
-        logging.info(f"no masks for this sample")
+    # if sample_masked > 0:
+    #     logging.info(
+    #         f"accuracy for this sample: {round(sample_correct/sample_masked,3)}"
+    #     )
+    # else:
+    #     logging.info(f"no masks for this sample")
     return target_text, sample_masked, sample_correct
 
 
