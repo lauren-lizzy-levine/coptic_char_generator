@@ -201,11 +201,11 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample_masked = 0
         sample_correct = 0
 
-        test_sentence = "thisisanEnglishsentencewithnospaces."
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
+        # test_sentence = "thisisanEnglishsentencewithnospaces."
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
         test_sentence = utils.filter_diacritics(test_sentence)
