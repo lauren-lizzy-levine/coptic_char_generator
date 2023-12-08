@@ -127,7 +127,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         train_list = data_list
         dev_list = [i for i in range(len(dev_data))]
 
-    criterion = nn.CrossEntropyLoss(reduction="mean")
+    criterion = nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, weight_decay=L2_lambda
     )
