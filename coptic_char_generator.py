@@ -297,3 +297,21 @@ def accuracy_evaluation(model, data, data_indexes):
     logging.info(
         f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
     )
+
+
+def baseline_accuracy(data, data_indexes):
+
+    masked_total = 0
+    correct = 0
+    target_char_index = 4     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
+
+    for i in data_indexes:
+        data_item = data[i]
+        target = [target_char_index] * len(data_item.labels)
+        masked, correct_guess = check_accuracy(target, data_item)
+        masked_total += masked
+        correct += correct_guess
+
+    logging.info(
+        f"Baseline; dev masked total: {masked_total}, correct predictions: {correct}, baseline accuracy: {round(correct / masked_total, 3)}"
+    )

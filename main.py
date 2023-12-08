@@ -84,6 +84,13 @@ if __name__ == "__main__":
         logger.info(
             f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
+        dev_data = []
+        file_path = f"./" + csv_name
+        read_datafile(file_path, dev_data)
+        dev_list = [i for i in range(len(dev_data))]
+        accuracy_evaluation(model, dev_data, dev_list)
+
+    baseline_accuracy(dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)
