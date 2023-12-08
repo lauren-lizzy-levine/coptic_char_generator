@@ -43,12 +43,8 @@ class RNN(nn.Module):
             batch_first=True,
         )
 
-        self.out = nn.Linear(hidden_size, embed_size)
-
-        # if not self.share:
-        #     self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
-
-        # TODO - figure out how to update input for share?
+        if not self.share:
+            self.out = nn.Linear(hidden_size, embed_size)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -69,17 +65,11 @@ class RNN(nn.Module):
         embed = self.dropout(embed)
         embed = self.scale_up(embed)
 
-        out, _ = self.rnn(embed)
-        out = self.dropout(out)
-        # print(f"B, T, hidden: {out.shape}")
-        # print(f"embed: {embed.shape}")
+        output, _ = self.rnn(embed)
+        output = self.dropout(output)
 
-        embed = self.out(embed)  # chars
-        # print(f"B, T, embed: {embed.shape}")
-        output = torch.matmul(embed, torch.t(self.embed.weight))
-        # print(f"B, T, vocab size: {out.shape}")
-        #
-        # print("-------------")
+        output = self.out(output)
+        output = torch.matmul(output, torch.t(self.embed.weight))
 
         return output
 

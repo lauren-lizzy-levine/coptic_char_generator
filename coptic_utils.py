@@ -64,8 +64,8 @@ specs = [
     masking_proportion,
 ]
 
-# learning_rate = 0.0001
-learning_rate = 0.0003
+learning_rate = 0.0001
+# learning_rate = 0.0003
 # learning_rate = 0.001
 # learning_rate = 0.003
 # learning_rate = 0.01

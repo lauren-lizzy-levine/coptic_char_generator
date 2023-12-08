@@ -267,7 +267,12 @@ def fill_masks(model, text, temp=0):
     logging.info(f"orig vs predicted char: {pairs_index}")
 
     sample_masked, sample_correct = check_accuracy(target, test_data_item)
-    logging.info(f"accuracy for this sample: {round(sample_correct/sample_masked,3)}")
+    if sample_masked > 0:
+        logging.info(
+            f"accuracy for this sample: {round(sample_correct/sample_masked,3)}"
+        )
+    else:
+        logging.info(f"no masks for this sample")
     return target_text, sample_masked, sample_correct
 
 
@@ -295,16 +300,20 @@ def accuracy_evaluation(model, data, data_indexes):
         masked_total += masked
         correct += correct_guess
 
-    logging.info(
-        f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
-    )
+    if masked_total >= 0:
+        logging.info(
+            f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
+        )
+    else:
+        logging.info(
+            f"dev masked total: {masked_total}, correct predictions: {correct}"
+        )
 
 
 def baseline_accuracy(data, data_indexes):
-
     masked_total = 0
     correct = 0
-    target_char_index = 4     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
+    target_char_index = 4  # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
 
     for i in data_indexes:
         data_item = data[i]
