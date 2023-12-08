@@ -89,8 +89,7 @@ if __name__ == "__main__":
         read_datafile(file_path, dev_data)
         dev_list = [i for i in range(len(dev_data))]
         accuracy_evaluation(model, dev_data, dev_list)
-
-    baseline_accuracy(dev_data, dev_list)
+        baseline_accuracy(dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)

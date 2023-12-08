@@ -42,8 +42,8 @@ def read_datafile(file_name, data_list):
             if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
-            # if len(data_list) > 20:
-            #     break
+            if len(data_list) > 100:
+                break
 
 
 def check_accuracy(target, orig_data_item):
@@ -230,6 +230,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         torch.save(model, f"{model_path}/{output_name}.pth")
 
     accuracy_evaluation(model, dev_data, dev_list)
+    baseline_accuracy(dev_data, dev_list)
 
     return model
 
