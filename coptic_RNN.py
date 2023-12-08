@@ -16,9 +16,8 @@ class RNN(nn.Module):
         self.eos_id = sentence_piece.piece_to_id("</s>")
         self.mask = sentence_piece.piece_to_id("<mask>")
 
-        num_tokens = sentence_piece.get_piece_size()
-        self.num_tokens = num_tokens
-        self.specs = specs + [num_tokens]
+        self.num_tokens = sentence_piece.get_piece_size()
+        self.specs = specs + [self.num_tokens]
 
         (
             embed_size,
@@ -29,7 +28,8 @@ class RNN(nn.Module):
             dropout,
             masking_proportion,
         ) = specs
-        self.embed = nn.Embedding(num_tokens, embed_size)
+
+        self.embed = nn.Embedding(self.num_tokens, embed_size)
         self.masking_proportion = masking_proportion
 
         self.scale_up = nn.Linear(embed_size, hidden_size)
@@ -99,17 +99,14 @@ class RNN(nn.Module):
 
             if r1 < self.masking_proportion:
                 if r2 < 0.8:
-                    # print("masked")
                     # replace with MASK symbol
                     replacement = self.mask
                     mask_count += 1
                 elif r2 < 0.9:
-                    # print("random replacement")
                     # replace with random character
                     replacement = random.randint(3, self.num_tokens - 1)
                     random_sub += 1
                 else:
-                    # print("orig")
                     # retain original
                     replacement = current_token
                     orig_token += 1

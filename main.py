@@ -38,17 +38,18 @@ if __name__ == "__main__":
 
     # step 1 - read in data
     # TODO - create a set that has all the file names to track any duplicates
-
-    file_dir_path = f"{get_home_path()}/Desktop/corpora_tt/"
-    file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
-    file_string = ",".join(file_list)
-    logging.info(f"Files found: {len(file_list)}")
-    sentences = coptic_char_data.read_datafiles(file_list)
-    logger.info(f"Files read: {len(sentences)} sentences")
+    #
+    # file_dir_path = f"{get_home_path()}/Desktop/corpora_tt/"
+    # file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
+    # file_string = ",".join(file_list)
+    # logging.info(f"Files found: {len(file_list)}")
+    # sentences = coptic_char_data.read_datafiles(file_list)
+    # logger.info(f"Files read: {len(sentences)} sentences")
 
     # TODO - what other information might we want to in the csv?
 
-    csv_name = "coptic_sentences.csv"
+    # csv_name = "coptic_sentences.csv"
+    csv_name = "english.csv"
     model_name = "coptic_sp"
 
     # TODO - masking options here - mask before we create sentencepiece model
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     # smart - smart masking based on the text
 
     # step 2 - write to csv
-    coptic_char_data.write_to_csv(csv_name, sentences, plain=True)
+    # coptic_char_data.write_to_csv(csv_name, sentences, plain=True)
 
     # step 3 - sentence piece (on training)
     if args.sentencepiece:

@@ -83,10 +83,11 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         # splice out just predicted indexes to go into loss
         masked_idx = torch.BoolTensor(data_item.mask)
 
+        # loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
+
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
         # logging.info(f"masked label: {masked_label}")
-        # loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
         loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
@@ -201,29 +202,35 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample_masked = 0
         sample_correct = 0
 
-        test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        test_sentence = "thisisanEnglishsentencewithnospaces."
         test_sentence = utils.filter_diacritics(test_sentence)
         _, masked, correct = fill_masks(model, test_sentence, temp=0)
         sample_masked += masked
         sample_correct += correct
 
-        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
-
-        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
-
-        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
+        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 

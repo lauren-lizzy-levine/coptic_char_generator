@@ -45,9 +45,9 @@ hidden_size = 100
 # hidden_size = 500
 # hidden_size = 1000
 
-rnn_nLayers = 2
+# rnn_nLayers = 2
 # rnn_nLayers = 3
-# rnn_nLayers = 4
+rnn_nLayers = 4
 
 dropout = 0.0
 # dropout = 0.1
@@ -86,10 +86,10 @@ batch_size_multiplier = 1
 # nEpochs = 1
 # nEpochs = 2
 # nEpochs = 4
-# nEpochs = 10
+nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
-nEpochs = 50
+# nEpochs = 50
 
 L2_lambda = 0.0
 # L2_lambda = 0.001
