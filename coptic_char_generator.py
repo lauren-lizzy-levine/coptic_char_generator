@@ -61,6 +61,8 @@ def check_accuracy(target, orig_data_item):
         if orig_data_item.labels[j] > 0:
             # masked token
             masked += 1
+            logger.info(f"actual labels: {orig_data_item.labels[j]}")
+            logger.info(f"prediction: {target[j]}")
             if target[j] == orig_data_item.labels[j]:
                 # prediction is correct
                 correct += 1
@@ -80,8 +82,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     for i in data_indexes:
         data_item = data[i]
 
-        data_item, mask_count = model.mask_and_label_characters(data_item)
-        total_masked += mask_count
+        #data_item, mask_count = model.mask_and_label_characters(data_item)
+        #total_masked += mask_count
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
@@ -113,6 +115,7 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
             # compare target to label
             # logger.debug(f"self attn labels: {data_item.labels}")
             # logger.debug(f"target labels: {target}")
+            #logger.info("No update")
             dev_masked, dev_correct = check_accuracy(target, data_item)
 
     if update:
@@ -188,7 +191,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             criterion,
             dev_data,
             dev_list,
-            update=False,
+            update=False, # ???
         )
 
         if epoch == 0:
@@ -218,40 +221,40 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
 
         test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        #sample_masked += masked
+        #sample_correct += correct
 
         # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
         # test_sentence = utils.filter_diacritics(test_sentence)
         # _, masked, correct = fill_masks(model, test_sentence, temp=0)
         # sample_masked += masked
         # sample_correct += correct
-        #
-        # test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-        #
-        # test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-        #
-        # test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
 
-        logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
+        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        test_sentence = utils.filter_diacritics(test_sentence)
+        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
+        #sample_masked += masked
+        #sample_correct += correct
+
+        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        #test_sentence = utils.filter_diacritics(test_sentence)
+        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
+        #sample_masked += masked
+        #sample_correct += correct
+
+        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        #test_sentence = utils.filter_diacritics(test_sentence)
+        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
+        #sample_masked += masked
+        #sample_correct += correct
+
+        #logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
     accuracy_evaluation(model, dev_data, dev_list)
-    baseline_accuracy(dev_data, dev_list)
+    #baseline_accuracy(dev_data, dev_list)
 
     return model
 
@@ -299,7 +302,7 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        data_item, _ = model.mask_and_label_characters(data_item)
+        #data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
@@ -311,6 +314,7 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
+        logger.info("In accuracy")
         masked, correct_guess = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess

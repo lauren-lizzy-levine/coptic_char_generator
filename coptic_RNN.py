@@ -60,7 +60,7 @@ class RNN(nn.Module):
         seqs = torch.cat(seqs).view(num_batches, num_tokens)
 
         embed = self.embed(seqs)
-        embed = self.dropout(embed)
+        #embed = self.dropout(embed)
         embed = self.scale_up(embed)
 
         output, _ = self.rnn(embed)

@@ -100,7 +100,22 @@ if __name__ == "__main__":
         file_path = f"./" + csv_name
         data = read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
+        fixed_data = []
+        for data_item in data:
+            masked_data_item, _ = model.mask_and_label_characters(data_item)
+            fixed_data.append(masked_data_item)
 
-        model = train_model(model, data, dev_data=data, output_name=model_name)
+        #y = DataItem(text="ⲧⲁⲓⲟⲛⲧⲉⲑⲉⲉⲧⲉⲣⲉⲡⲛⲟⲩⲧⲉⲛⲁⲕⲱⲧⲛⲁϥⲙⲡⲉϥⲣⲡⲉⲉⲑⲏⲡ·")
+        #x, _ = model.mask_and_label_characters(y)
+        #w = DataItem(text="ⲁⲩⲱⲟⲛϩⲛⲱⲥⲏⲉⲡⲉϫⲁϥϫⲉⲧⲁϭⲓϫⲧⲉⲛⲧⲁⲥⲥⲱⲛⲧⲛⲧⲉⲥⲧⲣⲁⲧⲓⲁⲛⲧⲡⲉ·")
+        #z, _ = model.mask_and_label_characters(w)
+        #sample_item = DataItem(text="ⲁⲩⲱⲟⲛϫⲉⲛⲧⲟⲕⲡⲉⲛⲧⲁⲕⲛⲧⲉⲃⲟⲗϩⲛϩⲏⲧⲥⲛⲧⲁⲙⲁⲁⲩ·",
+        #                        indexes=[1, 24, 3, 9, 16, 3, 5, 19, 4, 5, 8, 7, 20, 12, 3, 5, 8, 6, 20, 5, 8, 4, 23, 7, 3, 15, 45, 15, 18, 8, 13, 5, 8, 6, 10, 6, 6, 9, 3, 2],
+        #                        labels=[-100, -100, 6, -100, -100, 7, -100, -100, -100, -100, -100, -100, -100, -100, 4, -100, -100, -100, -100, -100, -100, -100, -100, -100, 22, -100, 5, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, 25, -100],
+        #                        mask=[False, False, True, False, False, True, False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, True, False, True, False, False, False, False, False, False, False, False, False, False, False, True, False]
+        #                           )
+        #fixed_data = [sample_item, x, z]
+
+        model = train_model(model, fixed_data, dev_data=fixed_data, output_name=model_name)
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")
