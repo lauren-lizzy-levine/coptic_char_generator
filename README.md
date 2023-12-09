@@ -11,9 +11,9 @@ is to clone the data repo into your Desktop, unzip the `sahidic.ot` and `sahidic
 To run the project, the command is just `python main.py`
 
 ### Mask Type  (required)
-Masking can be random (15% masking) or smart (based on the text). 
+Masking can be fixed (masked only once), random (randomly masked at each training batch) or smart (based on the text). 
 
-Add `-m <random, smart>` or `--masking <random,smart>` to the command.
+Add `-m <random, smart>` or `--masking <fixed,random,smart>` to the command.
 
 ### SentencePiece (optional)
 

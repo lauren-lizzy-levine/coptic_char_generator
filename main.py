@@ -27,7 +27,7 @@ if __name__ == "__main__":
         "-m",
         "--masking",
         required=True,
-        help="masking strategy: random or smart",
+        help="masking strategy: fixed, random, smart",
         action="store",
     )
     args = parser.parse_args()
@@ -53,7 +53,8 @@ if __name__ == "__main__":
     model_name = "coptic_sp"
 
     # TODO - masking options here - mask before we create sentencepiece model
-    logger.info(f"Masking type: {args.masking}")
+    masking_strategy = args.masking
+    logger.info(f"Masking type: {masking_strategy}")
     # random - masking as we have right now
     # smart - smart masking based on the text
 
@@ -100,24 +101,19 @@ if __name__ == "__main__":
         file_path = f"./" + csv_name
         data = read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
-        fixed_data = []
-        for data_item in data:
-            masked_data_item, _ = model.mask_and_label_characters(data_item)
-            fixed_data.append(masked_data_item)
 
-        # y = DataItem(text="ⲧⲁⲓⲟⲛⲧⲉⲑⲉⲉⲧⲉⲣⲉⲡⲛⲟⲩⲧⲉⲛⲁⲕⲱⲧⲛⲁϥⲙⲡⲉϥⲣⲡⲉⲉⲑⲏⲡ·")
-        # x, _ = model.mask_and_label_characters(y)
-        # w = DataItem(text="ⲁⲩⲱⲟⲛϩⲛⲱⲥⲏⲉⲡⲉϫⲁϥϫⲉⲧⲁϭⲓϫⲧⲉⲛⲧⲁⲥⲥⲱⲛⲧⲛⲧⲉⲥⲧⲣⲁⲧⲓⲁⲛⲧⲡⲉ·")
-        # z, _ = model.mask_and_label_characters(w)
-        # sample_item = DataItem(text="ⲁⲩⲱⲟⲛϫⲉⲛⲧⲟⲕⲡⲉⲛⲧⲁⲕⲛⲧⲉⲃⲟⲗϩⲛϩⲏⲧⲥⲛⲧⲁⲙⲁⲁⲩ·",
-        #                        indexes=[1, 24, 3, 9, 16, 3, 5, 19, 4, 5, 8, 7, 20, 12, 3, 5, 8, 6, 20, 5, 8, 4, 23, 7, 3, 15, 45, 15, 18, 8, 13, 5, 8, 6, 10, 6, 6, 9, 3, 2],
-        #                        labels=[-100, -100, 6, -100, -100, 7, -100, -100, -100, -100, -100, -100, -100, -100, 4, -100, -100, -100, -100, -100, -100, -100, -100, -100, 22, -100, 5, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, 25, -100],
-        #                        mask=[False, False, True, False, False, True, False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, True, False, True, False, False, False, False, False, False, False, False, False, False, False, True, False]
-        #                           )
-        # fixed_data = [sample_item, x, z]
+        if masking_strategy == "fixed":
+            logger.info("Masking strategy is fixed, masking sentences...")
+            training_data = []
+            for data_item in data:
+                masked_data_item, _ = model.mask_and_label_characters(data_item)
+                training_data.append(masked_data_item)
+            logger.info("Masking complete")
+            mask = False
+        else:
+            training_data = data
+            mask = True
 
-        model = train_model(
-            model, fixed_data, dev_data=fixed_data, output_name=model_name
-        )
+        model = train_model(model, training_data, output_name=model_name, mask=mask)
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")
