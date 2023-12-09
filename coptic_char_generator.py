@@ -1,6 +1,5 @@
 import time
 from random import shuffle
-import re
 
 from coptic_RNN import *
 import coptic_utils as utils
@@ -30,15 +29,10 @@ def read_datafile(file_name, data_list, num_sentences=100):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
-        sentences = sentences[1:]  # skip header
 
         for sentence in sentences:
             sentence = sentence.strip()
-            sentence = re.sub(r"\d+,", "", sentence)
             if len(sentence) == 0:
-                continue
-            # For now (prelim model training), skip sentences with real lacunas
-            if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
 
@@ -61,8 +55,8 @@ def check_accuracy(target, orig_data_item):
         if orig_data_item.labels[j] > 0:
             # masked token
             masked += 1
-            logger.info(f"actual labels: {orig_data_item.labels[j]}")
-            logger.info(f"prediction: {target[j]}")
+            #logger.info(f"actual labels: {orig_data_item.labels[j]}")
+            #logger.info(f"prediction: {target[j]}")
             if target[j] == orig_data_item.labels[j]:
                 # prediction is correct
                 correct += 1
@@ -252,7 +246,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         torch.save(model, f"{model_path}/{output_name}.pth")
 
     accuracy_evaluation(model, dev_data, dev_list)
-    # baseline_accuracy(dev_data, dev_list)
+    # baseline_accuracy(model, dev_data, dev_list)
 
     return model
 
@@ -312,7 +306,7 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
-        logger.info("In accuracy")
+        #logger.info("In accuracy")
         masked, correct_guess = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess
@@ -327,18 +321,27 @@ def accuracy_evaluation(model, data, data_indexes):
         )
 
 
-def baseline_accuracy(data, data_indexes):
+def baseline_accuracy(model, data, data_indexes):
     masked_total = 0
-    correct = 0
-    target_char_index = 4  # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
+    correct_most_common_char = 0
+    correct_random = 0
+    # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
+    target_char_index = model.sentence_piece.piece_to_id("ⲉ")
+    logging.info(target_char_index)
 
     for i in data_indexes:
         data_item = data[i]
-        target = [target_char_index] * len(data_item.labels)
-        masked, correct_guess = check_accuracy(target, data_item)
+        most_common_char_target = [target_char_index] * len(data_item.labels)
+        random_target = [random.randint(3, model.num_tokens - 1) for i in range(len(data_item.labels))]
+        _, correct_guess_correct_most_common = check_accuracy(most_common_char_target, data_item)
+        masked, correct_guess_random = check_accuracy(random_target, data_item)
         masked_total += masked
-        correct += correct_guess
+        correct_most_common_char += correct_guess_correct_most_common
+        correct_random += correct_guess_random
 
     logging.info(
-        f"Baseline; dev masked total: {masked_total}, correct predictions: {correct}, baseline accuracy: {round(correct / masked_total, 3)}"
+        f"Most Common Char Baseline; dev masked total: {masked_total}, correct predictions: {correct_most_common_char}, baseline accuracy: {round(correct_most_common_char / masked_total, 3)}"
+    )
+    logging.info(
+        f"Random Baseline; dev masked total: {masked_total}, correct predictions: {correct_random}, baseline accuracy: {round(correct_random / masked_total, 3)}"
     )

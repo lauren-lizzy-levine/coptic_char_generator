@@ -2,9 +2,52 @@ import csv
 import regex as re
 
 import coptic_utils as utils
+import string
 
 
 def read_datafiles(file_list):
+    train_sentences, dev_sentences, test_sentences, \
+    empty_lacuna_sentences, reconstructed_lacuna_sentences = [], [], [], [], []
+    lacuna_sentences = set()
+    reg_sentences = set()
+    sentences = collect_sentences(file_list)
+    # separate out sentences with actual lacunas
+    for sentence in sentences:
+        if detect_lacuna(sentence):
+            lacuna_sentences.add(sentence)
+        else:
+            reg_sentences.add(sentence)
+    # partition regular sentences
+    reg_sentences_list = list(reg_sentences)
+    # calculate lengths for each partition based on ratios (90:5:5)
+    reg_sent_len = len(reg_sentences_list)
+    train_length = int(reg_sent_len * 0.9)
+    dev_test_length = int(reg_sent_len * 0.05)
+    # partition the list
+    train_sentences = reg_sentences_list[:train_length]
+    dev_sentences = reg_sentences_list[train_length:train_length + dev_test_length]
+    test_sentences = reg_sentences_list[train_length + dev_test_length:]
+
+    # TODO: separate reconstructed vs empty lacuna sentences
+    reconstructed_lacuna_sentences = list(lacuna_sentences)
+
+    return train_sentences, dev_sentences, test_sentences, \
+            empty_lacuna_sentences, reconstructed_lacuna_sentences
+
+
+def detect_lacuna(sentence):
+    contains_lacuna = False
+    lacuna_markers = ["[", "]", "{", "}", "(", ")", "?", "..", "…"]
+    if has_more_than_three_latin_characters(sentence):
+        contains_lacuna = True
+    for marker in lacuna_markers:
+        if marker in sentence:
+            contains_lacuna = True
+            break
+    return contains_lacuna
+
+
+def collect_sentences(file_list):
     sentences = []
 
     for file_name in file_list:
@@ -40,30 +83,27 @@ def read_datafiles(file_list):
 
                     if new_sentence_detected:
                         if len(temp_sentence) > 0:
+                            temp_sentence = re.sub(r"|", "", temp_sentence)
                             filtered_sentence = utils.filter_diacritics(temp_sentence)
-                            sentences.append(
-                                {"index": len(sentences), "sentence": filtered_sentence}
-                            )
+                            sentences.append(filtered_sentence)
                         temp_sentence = temp_orig_group_content
                         new_sentence_detected = False
                     else:
                         temp_sentence += temp_orig_group_content
 
             filtered_sentence = utils.filter_diacritics(temp_sentence)
-            sentences.append({"index": len(sentences), "sentence": filtered_sentence})
+
+            sentences.append(filtered_sentence)
     return sentences
 
 
-def write_to_csv(file_name, sentence_list, plain=False):
-    if plain:
-        with open(file_name, "w") as csvfile:
-            for sentence in sentence_list:
-                # remove lacuna (no filler symbols in sp model)
-                sent = re.sub(r"\[.*\]", "", sentence["sentence"]) + "\n"
-                csvfile.write(sent)
-    else:
-        column_names = ["index", "sentence"]
-        with open(file_name, "w") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=column_names)
-            writer.writeheader()
-            writer.writerows(sentence_list)
+def has_more_than_three_latin_characters(input_string):
+    latin_count = sum(1 for char in input_string if char in string.ascii_letters)
+    return latin_count > 3
+
+
+def write_to_csv(file_name, sentence_list):
+    with open(file_name, "w") as csvfile:
+        for sentence in sentence_list:
+            sent = sentence + "\n"
+            csvfile.write(sent)
