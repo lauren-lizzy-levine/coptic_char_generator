@@ -1,6 +1,5 @@
 import time
 from random import shuffle
-import re
 
 from coptic_RNN import *
 import coptic_utils as utils
@@ -30,15 +29,10 @@ def read_datafile(file_name, data_list, num_sentences=100):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
-        sentences = sentences[1:]  # skip header
 
         for sentence in sentences:
             sentence = sentence.strip()
-            sentence = re.sub(r"\d+,", "", sentence)
             if len(sentence) == 0:
-                continue
-            # For now (prelim model training), skip sentences with real lacunas
-            if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
 
@@ -312,7 +306,7 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
-        logger.info("In accuracy")
+        #logger.info("In accuracy")
         masked, correct_guess = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess

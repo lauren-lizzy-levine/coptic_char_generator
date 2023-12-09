@@ -6,7 +6,6 @@ import coptic_char_data
 import sp_coptic
 from coptic_char_generator import *
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Coptic character level generator")
     parser.add_argument(
@@ -30,25 +29,51 @@ if __name__ == "__main__":
         help="masking strategy: random or smart",
         action="store",
     )
+    parser.add_argument(
+        "-p",
+        "--partition",
+        required=False,
+        help="create the data set partition",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     logger.info(f"start coptic data processing -- {datetime.datetime.now()}")
 
-    # TODO - train/dev/test split (we may want to do this before step 1
+    # step 1 - set data files, partition the in data if needed (train/dev/test split)
+    train_csv = "train.csv"
+    dev_csv = "dev.csv"
+    test_csv = "test.csv"
+    empty_lacuna_csv = "test_empty_lacuna.csv"
+    reconstructed_lacuna_csv = "test_reconstructed_lacuna.csv"
+    full_csv = "full_data.csv"
 
-    # step 1 - read in data
-    # TODO - create a set that has all the file names to track any duplicates
+    if args.partition:
+        # Do full data partition
+        file_dir_path = f"{get_home_path()}/Desktop/corpora_tt/"
+        file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
+        file_string = ",".join(file_list)
+        logging.info(f"Files found: {len(file_list)}")
+        train_sentences, dev_sentences, test_sentences, \
+            empty_lacuna_sentences, reconstructed_lacuna_sentences = coptic_char_data.read_datafiles(file_list)
+        full_data = train_sentences + dev_sentences + test_sentences
+        logger.info(f"train: {len(train_sentences)} sentences")
+        logger.info(f"dev: {len(dev_sentences)} sentences")
+        logger.info(f"test: {len(test_sentences)} sentences")
+        logger.info(f"full: {len(full_data)} sentences")
+        logger.info(f"empty test: {len(empty_lacuna_sentences)} sentences")
+        logger.info(f"recon test: {len(reconstructed_lacuna_sentences)} sentences")
 
-    file_dir_path = f"{get_home_path()}/Desktop/corpora_tt/"
-    file_list = glob.glob(f"{file_dir_path}*/*/*.tt")
-    file_string = ",".join(file_list)
-    logging.info(f"Files found: {len(file_list)}")
-    sentences = coptic_char_data.read_datafiles(file_list)
-    logger.info(f"Files read: {len(sentences)} sentences")
+        # write to partition files
+        coptic_char_data.write_to_csv(train_csv, train_sentences)
+        coptic_char_data.write_to_csv(dev_csv, dev_sentences)
+        coptic_char_data.write_to_csv(test_csv, test_sentences)
+        coptic_char_data.write_to_csv(full_csv, full_data)
+        coptic_char_data.write_to_csv(empty_lacuna_csv, empty_lacuna_sentences)
+        coptic_char_data.write_to_csv(reconstructed_lacuna_csv, reconstructed_lacuna_sentences)
 
     # TODO - what other information might we want to in the csv?
 
-    csv_name = "coptic_sentences.csv"
     # csv_name = "english.csv"
     model_name = "coptic_sp"
 
@@ -57,16 +82,13 @@ if __name__ == "__main__":
     # random - masking as we have right now
     # smart - smart masking based on the text
 
-    # step 2 - write to csv
-    coptic_char_data.write_to_csv(csv_name, sentences, plain=True)
-
-    # step 3 - sentence piece (on training)
+    # step 2 - sentence piece (on training)
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            csv_name, f"{model_name}", vocab_size=1000, train=True
+            full_csv, f"{model_name}", vocab_size=1000, train=True
         )
 
-    # step 4 - model training
+    # step 3 - model training
     if args.train:
         logger.info("Training a sentencepiece model")
         sp = sp_coptic.spm.SentencePieceProcessor()
@@ -85,36 +107,30 @@ if __name__ == "__main__":
         logger.info(
             f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
+        # Eval on Dev data
         dev_data = []
-        file_path = f"./" + csv_name
-        read_datafile(file_path, dev_data)
+        file_path = f"./" + dev_csv
+        dev_data = read_datafile(file_path, dev_data)
         dev_list = [i for i in range(len(dev_data))]
-        accuracy_evaluation(model, dev_data, dev_list)
-        baseline_accuracy(dev_data, dev_list)
+        fixed_dev_data = []
+        for data_item in dev_data:
+            masked_data_item, _ = model.mask_and_label_characters(data_item)
+            fixed_dev_data.append(masked_data_item)
+        accuracy_evaluation(model, fixed_dev_data, dev_list)
+        baseline_accuracy(fixed_dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)
 
     if args.train:
         data = []
-        file_path = f"./" + csv_name
+        file_path = f"./" + train_csv
         data = read_datafile(file_path, data)
-        logger.info(f"File {csv_name} read in with {len(data)} lines")
+        logger.info(f"File {train_csv} read in with {len(data)} lines")
         fixed_data = []
         for data_item in data:
             masked_data_item, _ = model.mask_and_label_characters(data_item)
             fixed_data.append(masked_data_item)
-
-        # y = DataItem(text="ⲧⲁⲓⲟⲛⲧⲉⲑⲉⲉⲧⲉⲣⲉⲡⲛⲟⲩⲧⲉⲛⲁⲕⲱⲧⲛⲁϥⲙⲡⲉϥⲣⲡⲉⲉⲑⲏⲡ·")
-        # x, _ = model.mask_and_label_characters(y)
-        # w = DataItem(text="ⲁⲩⲱⲟⲛϩⲛⲱⲥⲏⲉⲡⲉϫⲁϥϫⲉⲧⲁϭⲓϫⲧⲉⲛⲧⲁⲥⲥⲱⲛⲧⲛⲧⲉⲥⲧⲣⲁⲧⲓⲁⲛⲧⲡⲉ·")
-        # z, _ = model.mask_and_label_characters(w)
-        # sample_item = DataItem(text="ⲁⲩⲱⲟⲛϫⲉⲛⲧⲟⲕⲡⲉⲛⲧⲁⲕⲛⲧⲉⲃⲟⲗϩⲛϩⲏⲧⲥⲛⲧⲁⲙⲁⲁⲩ·",
-        #                        indexes=[1, 24, 3, 9, 16, 3, 5, 19, 4, 5, 8, 7, 20, 12, 3, 5, 8, 6, 20, 5, 8, 4, 23, 7, 3, 15, 45, 15, 18, 8, 13, 5, 8, 6, 10, 6, 6, 9, 3, 2],
-        #                        labels=[-100, -100, 6, -100, -100, 7, -100, -100, -100, -100, -100, -100, -100, -100, 4, -100, -100, -100, -100, -100, -100, -100, -100, -100, 22, -100, 5, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, 25, -100],
-        #                        mask=[False, False, True, False, False, True, False, False, False, False, False, False, False, False, True, False, False, False, False, False, False, False, False, False, True, False, True, False, False, False, False, False, False, False, False, False, False, False, True, False]
-        #                           )
-        # fixed_data = [sample_item, x, z]
 
         model = train_model(
             model, fixed_data, dev_data=fixed_data, output_name=model_name
