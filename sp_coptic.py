@@ -32,22 +32,22 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
 
     logger.info(f"SentencePiece model {model_name} created")
 
-    print(sp.__dict__)
-    print(sp.this)
-
-    print(sp.EncodeAsPieces("Hello world."))
-    print(sp.EncodeAsIds("Hello world."))
-
-    print()
-    print(sp.EncodeAsPieces("ⲕⲱⲧⲉ"))
-    print(sp.EncodeAsIds("ⲕⲱⲧⲉ"))
-    print(f"<mask> sp: {sp.PieceToId('<mask>')}")
-
-    print(f"decode 0: {sp.DecodeIds(0)}")
-    print(f"decode 1: {sp.DecodeIds(1)}")
-    print(f"decode 2: {sp.DecodeIds(2)}")
-    print(f"decode 3: {sp.DecodeIds(3)}")
-    print(f"decode 4: {sp.DecodeIds(4)}")
-
-    print()
-    print(sp.DecodeIds([10, 32, 45, 14]))  # just some random tokens
+    # print(sp.__dict__)
+    # print(sp.this)
+    #
+    # print(sp.EncodeAsPieces("Hello world."))
+    # print(sp.EncodeAsIds("Hello world."))
+    #
+    # print()
+    # print(sp.EncodeAsPieces("ⲕⲱⲧⲉ"))
+    # print(sp.EncodeAsIds("ⲕⲱⲧⲉ"))
+    # print(f"<mask> sp: {sp.PieceToId('<mask>')}")
+    #
+    # print(f"decode 0: {sp.DecodeIds(0)}")
+    # print(f"decode 1: {sp.DecodeIds(1)}")
+    # print(f"decode 2: {sp.DecodeIds(2)}")
+    # print(f"decode 3: {sp.DecodeIds(3)}")
+    # print(f"decode 4: {sp.DecodeIds(4)}")
+    #
+    # print()
+    # print(sp.DecodeIds([10, 32, 45, 14]))  # just some random tokens

@@ -16,9 +16,8 @@ class RNN(nn.Module):
         self.eos_id = sentence_piece.piece_to_id("</s>")
         self.mask = sentence_piece.piece_to_id("<mask>")
 
-        num_tokens = sentence_piece.get_piece_size()
-        self.num_tokens = num_tokens
-        self.specs = specs + [num_tokens]
+        self.num_tokens = sentence_piece.get_piece_size()
+        self.specs = specs + [self.num_tokens]
 
         (
             embed_size,
@@ -29,7 +28,8 @@ class RNN(nn.Module):
             dropout,
             masking_proportion,
         ) = specs
-        self.embed = nn.Embedding(num_tokens, embed_size)
+
+        self.embed = nn.Embedding(self.num_tokens, embed_size)
         self.masking_proportion = masking_proportion
 
         self.scale_up = nn.Linear(embed_size, hidden_size)
@@ -44,12 +44,6 @@ class RNN(nn.Module):
         )
 
         self.out = nn.Linear(hidden_size, embed_size)
-
-        # if not self.share:
-        #     self.out = nn.Linear(proj_size * 2, num_tokens, bias=False)
-
-        # TODO - figure out how to update input for share?
-
         self.dropout = nn.Dropout(dropout)
 
         for p in self.parameters():
@@ -66,19 +60,18 @@ class RNN(nn.Module):
         seqs = torch.cat(seqs).view(num_batches, num_tokens)
 
         embed = self.embed(seqs)
-        #embed = self.dropout(embed)
+        embed = self.dropout(embed)
         embed = self.scale_up(embed)
 
         output, _ = self.rnn(embed)
         # print(f"B, T, hidden: {out.shape}")
         # print(f"embed: {embed.shape}")
+        output = self.dropout(output)
 
         output = self.out(output)  # chars
         # print(f"B, T, embed: {embed.shape}")
         output = torch.matmul(output, torch.t(self.embed.weight))
         # print(f"B, T, vocab size: {out.shape}")
-        #
-        # print("-------------")
 
         return output
 
@@ -110,17 +103,14 @@ class RNN(nn.Module):
 
             if r1 < self.masking_proportion:
                 if r2 < 0.8:
-                    # print("masked")
                     # replace with MASK symbol
                     replacement = self.mask
                     mask_count += 1
                 elif r2 < 0.9:
-                    # print("random replacement")
                     # replace with random character
                     replacement = random.randint(3, self.num_tokens - 1)
                     random_sub += 1
                 else:
-                    # print("orig")
                     # retain original
                     replacement = current_token
                     orig_token += 1

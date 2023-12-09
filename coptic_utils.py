@@ -45,7 +45,7 @@ hidden_size = 300
 # hidden_size = 500
 # hidden_size = 1000
 
-#rnn_nLayers = 2
+# rnn_nLayers = 2
 # rnn_nLayers = 3
 rnn_nLayers = 4
 
@@ -64,6 +64,9 @@ specs = [
     masking_proportion,
 ]
 
+learning_rate = 0.0001
+# learning_rate = 0.0003
+# learning_rate = 0.001
 # learning_rate = 0.0001
 # learning_rate = 0.0003
 learning_rate = 0.001
@@ -85,11 +88,11 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-nEpochs = 4
-# nEpochs = 10
+# nEpochs = 4
+nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
-nEpochs = 50
+# nEpochs = 50
 
 L2_lambda = 0.0
 # L2_lambda = 0.001

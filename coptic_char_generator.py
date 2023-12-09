@@ -13,7 +13,6 @@ class DataItem:
         self.mask = (
             mask  # list of indexes same size as index, true when character is masked
         )
-        # TODO - i'm not sure what the masks even do, we don't seem to use this?
         self.labels = labels  # list of indexes for attention mask
 
 
@@ -27,7 +26,7 @@ def count_parameters(model):
     logging.info(f"total parameter count = {total:,}")
 
 
-def read_datafile(file_name, data_list):
+def read_datafile(file_name, data_list, num_sentences=100):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
@@ -42,8 +41,15 @@ def read_datafile(file_name, data_list):
             if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
-            if len(data_list) > 20:
+
+            if len(data_list) > num_sentences:
                 break
+
+    if len(data_list) < num_sentences:
+        quotient, remainder = divmod(num_sentences, len(data_list))
+        data_list = quotient * data_list + data_list[:remainder]
+
+    return data_list
 
 
 def check_accuracy(target, orig_data_item):
@@ -76,8 +82,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     for i in data_indexes:
         data_item = data[i]
 
-        #data_item, mask_count = model.mask_and_label_characters(data_item)
-        #total_masked += mask_count
+        # data_item, mask_count = model.mask_and_label_characters(data_item)
+        # total_masked += mask_count
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
@@ -85,17 +91,20 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
         # splice out just predicted indexes to go into loss
         masked_idx = torch.BoolTensor(data_item.mask)
 
+        # loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
+
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
         # logging.info(f"masked label: {masked_label}")
-        #loss = criterion(out[0], label_tensor.view(-1))  # [1:] old loss method
         loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
         total_tokens += len(out[0])
         total_chars += len(data_item.text) + 1
 
-        if not update:
+        if update:
+            loss.backward()
+        else:
             target = []
             for emb in out[0]:
                 scores = emb
@@ -106,11 +115,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
             # compare target to label
             # logger.debug(f"self attn labels: {data_item.labels}")
             # logger.debug(f"target labels: {target}")
-            #logger.info("No update")
+            # logger.info("No update")
             dev_masked, dev_correct = check_accuracy(target, data_item)
-
-        if update:
-            loss.backward()
 
     if update:
         optimizer.step()
@@ -146,6 +152,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             bs *= batch_size_multiplier
         incremental_batch_size = int(bs + 0.5)
         shuffle(train_list)
+
         model.train()
         train_loss, train_tokens, train_chars, train_mask_count = 0, 0, 0, 0
         for i in range(0, len(train_list), incremental_batch_size):
@@ -167,8 +174,8 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                     f"{epoch:4} {i:6} {num_tokens:5} {num_characters:6} loss {loss / num_tokens:7.3f} {loss / num_characters:7.3f} -- tot tr loss: {train_loss / train_tokens:8.4f} {train_loss / train_chars:8.4f}"
                 )
         logger.debug(f"masked total: {train_mask_count}")
-        model.eval()
 
+        model.eval()
         (
             dev_loss,
             dev_tokens,
@@ -182,7 +189,7 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             criterion,
             dev_data,
             dev_list,
-            update=False, # ???
+            update=False,  # ???
         )
 
         if epoch == 0:
@@ -204,36 +211,48 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample_masked = 0
         sample_correct = 0
 
-        test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        # test_sentence = "thisisanEnglishsentencewithnospaces."
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+
+        test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-       # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        #sample_masked += masked
-        #sample_correct += correct
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+
+        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
-        #sample_masked += masked
-        #sample_correct += correct
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        #test_sentence = utils.filter_diacritics(test_sentence)
-        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
-        #sample_masked += masked
-        #sample_correct += correct
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        #test_sentence = utils.filter_diacritics(test_sentence)
-        #_, masked, correct = fill_masks(model, test_sentence, temp=0)
-        #sample_masked += masked
-        #sample_correct += correct
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
-        #logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
+        # logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
     accuracy_evaluation(model, dev_data, dev_list)
-    #baseline_accuracy(dev_data, dev_list)
+    # baseline_accuracy(dev_data, dev_list)
 
     return model
 
@@ -270,7 +289,6 @@ def fill_masks(model, text, temp=0):
     logging.info(f"orig vs predicted char: {pairs_index}")
 
     sample_masked, sample_correct = check_accuracy(target, test_data_item)
-    logging.info(f"accuracy for this sample: {round(sample_correct/sample_masked,3)}")
     return target_text, sample_masked, sample_correct
 
 
@@ -282,7 +300,7 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        #data_item, _ = model.mask_and_label_characters(data_item)
+        # data_item, _ = model.mask_and_label_characters(data_item)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
@@ -299,16 +317,20 @@ def accuracy_evaluation(model, data, data_indexes):
         masked_total += masked
         correct += correct_guess
 
-    logging.info(
-        f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
-    )
+    if masked_total >= 0:
+        logging.info(
+            f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
+        )
+    else:
+        logging.info(
+            f"dev masked total: {masked_total}, correct predictions: {correct}"
+        )
 
 
 def baseline_accuracy(data, data_indexes):
-
     masked_total = 0
     correct = 0
-    target_char_index = 4     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
+    target_char_index = 4  # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
 
     for i in data_indexes:
         data_item = data[i]
