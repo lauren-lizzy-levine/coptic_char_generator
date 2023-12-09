@@ -117,7 +117,7 @@ if __name__ == "__main__":
             masked_data_item, _ = model.mask_and_label_characters(data_item)
             fixed_dev_data.append(masked_data_item)
         accuracy_evaluation(model, fixed_dev_data, dev_list)
-        baseline_accuracy(fixed_dev_data, dev_list)
+        baseline_accuracy(model, fixed_dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)
