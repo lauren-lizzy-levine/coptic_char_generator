@@ -27,7 +27,14 @@ if __name__ == "__main__":
         "-m",
         "--masking",
         required=True,
-        help="masking strategy: fixed, random, smart",
+        help="mask type: random, smart",
+        action="store",
+    )
+    parser.add_argument(
+        "-ms",
+        "--masking-strategy",
+        required=True,
+        help="masking strategy: once, dynamic",
         action="store",
     )
     args = parser.parse_args()
@@ -52,12 +59,6 @@ if __name__ == "__main__":
     # csv_name = "english.csv"
     model_name = "coptic_sp"
 
-    # TODO - masking options here - mask before we create sentencepiece model
-    masking_strategy = args.masking
-    logger.info(f"Masking type: {masking_strategy}")
-    # random - masking as we have right now
-    # smart - smart masking based on the text
-
     # step 2 - write to csv
     coptic_char_data.write_to_csv(csv_name, sentences, plain=True)
 
@@ -68,6 +69,13 @@ if __name__ == "__main__":
         )
 
     # step 4 - model training
+
+    mask_type = args.masking
+    masking_strategy = args.masking_strategy
+    logger.info(f"Mask type: {mask_type} - {masking_strategy}")
+    # random - masking as we have right now
+    # smart - smart masking based on the text
+
     if args.train:
         logger.info("Training a sentencepiece model")
         sp = sp_coptic.spm.SentencePieceProcessor()
@@ -102,7 +110,7 @@ if __name__ == "__main__":
         data = read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
 
-        if masking_strategy == "fixed":
+        if masking_strategy == "once":
             logger.info("Masking strategy is fixed, masking sentences...")
             training_data = []
             for data_item in data:
@@ -110,7 +118,7 @@ if __name__ == "__main__":
                 training_data.append(masked_data_item)
             logger.info("Masking complete")
             mask = False
-        else:
+        elif masking_strategy == "dynamic":
             training_data = data
             mask = True
 
