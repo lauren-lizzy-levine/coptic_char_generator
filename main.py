@@ -98,7 +98,7 @@ if __name__ == "__main__":
     if args.train:
         data = []
         file_path = f"./" + csv_name
-        read_datafile(file_path, data)
+        data = read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
 
         model = train_model(model, data, dev_data=data, output_name=model_name)

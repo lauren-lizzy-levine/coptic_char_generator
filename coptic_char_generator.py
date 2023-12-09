@@ -26,7 +26,7 @@ def count_parameters(model):
     logging.info(f"total parameter count = {total:,}")
 
 
-def read_datafile(file_name, data_list):
+def read_datafile(file_name, data_list, num_sentences=100):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
@@ -41,8 +41,15 @@ def read_datafile(file_name, data_list):
             if "[" in sentence:
                 continue
             data_list.append(DataItem(text=sentence))
-            if len(data_list) > 100:
+
+            if len(data_list) > num_sentences:
                 break
+
+    if len(data_list) < num_sentences:
+        quotient, remainder = divmod(num_sentences, len(data_list))
+        data_list = quotient * data_list + data_list[:remainder]
+
+    return data_list
 
 
 def check_accuracy(target, orig_data_item):
@@ -116,6 +123,8 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
 
 def train_model(model, train_data, dev_data=None, output_name="charLM"):
     data_list = [i for i in range(len(train_data))]
+
+    print(len(data_list))
 
     if dev_data is None:
         shuffle(data_list)
@@ -207,29 +216,35 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         # sample_masked += masked
         # sample_correct += correct
 
-        test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
         _, masked, correct = fill_masks(model, test_sentence, temp=0)
         sample_masked += masked
         sample_correct += correct
 
-        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
-
-        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
-
-        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        sample_masked += masked
-        sample_correct += correct
+        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
 
         logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
