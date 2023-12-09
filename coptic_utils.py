@@ -37,17 +37,17 @@ else:
     # proj_size = 250
     # proj_size = 350
 
-hidden_size = 100
+# hidden_size = 100
 # hidden_size = 150
 # hidden_size = 200
-# hidden_size = 300
+hidden_size = 300
 # hidden_size = 400
 # hidden_size = 500
 # hidden_size = 1000
 
-rnn_nLayers = 2
+#rnn_nLayers = 2
 # rnn_nLayers = 3
-# rnn_nLayers = 4
+rnn_nLayers = 4
 
 dropout = 0.0
 # dropout = 0.1
@@ -65,8 +65,8 @@ specs = [
 ]
 
 # learning_rate = 0.0001
-learning_rate = 0.0003
-# learning_rate = 0.001
+# learning_rate = 0.0003
+learning_rate = 0.001
 # learning_rate = 0.003
 # learning_rate = 0.01
 
@@ -85,7 +85,7 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-# nEpochs = 4
+nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
