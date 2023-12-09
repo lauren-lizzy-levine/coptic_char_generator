@@ -60,14 +60,18 @@ class RNN(nn.Module):
         seqs = torch.cat(seqs).view(num_batches, num_tokens)
 
         embed = self.embed(seqs)
-        #embed = self.dropout(embed)
+        embed = self.dropout(embed)
         embed = self.scale_up(embed)
 
         output, _ = self.rnn(embed)
+        # print(f"B, T, hidden: {out.shape}")
+        # print(f"embed: {embed.shape}")
         output = self.dropout(output)
 
-        output = self.out(output)
+        output = self.out(output)  # chars
+        # print(f"B, T, embed: {embed.shape}")
         output = torch.matmul(output, torch.t(self.embed.weight))
+        # print(f"B, T, vocab size: {out.shape}")
 
         return output
 
