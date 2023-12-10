@@ -2,19 +2,22 @@ import csv
 import regex as re
 
 import coptic_utils as utils
-import string
+import unicodedata
 
 
 def read_datafiles(file_list):
-    train_sentences, dev_sentences, test_sentences, \
-    empty_lacuna_sentences, reconstructed_lacuna_sentences = [], [], [], [], []
-    lacuna_sentences = set()
+    recon_lacuna_sentences = set()
+    empt_lacuna_sentences = set()
     reg_sentences = set()
     sentences = collect_sentences(file_list)
     # separate out sentences with actual lacunas
     for sentence in sentences:
-        if detect_lacuna(sentence):
-            lacuna_sentences.add(sentence)
+        lacuna_type = detect_lacuna(sentence)
+        if lacuna_type:
+            if lacuna_type == "reconstructed":
+                recon_lacuna_sentences.add(sentence)
+            if lacuna_type == "empty":
+                empt_lacuna_sentences.add(sentence)
         else:
             reg_sentences.add(sentence)
     # partition regular sentences
@@ -28,23 +31,30 @@ def read_datafiles(file_list):
     dev_sentences = reg_sentences_list[train_length:train_length + dev_test_length]
     test_sentences = reg_sentences_list[train_length + dev_test_length:]
 
-    # TODO: separate reconstructed vs empty lacuna sentences
-    reconstructed_lacuna_sentences = list(lacuna_sentences)
+    reconstructed_lacuna_sentences = list(recon_lacuna_sentences)
+    empty_lacuna_sentences = list(empt_lacuna_sentences)
 
     return train_sentences, dev_sentences, test_sentences, \
             empty_lacuna_sentences, reconstructed_lacuna_sentences
 
 
 def detect_lacuna(sentence):
-    contains_lacuna = False
-    lacuna_markers = ["[", "]", "{", "}", "(", ")", "?", "..", "…"]
-    if has_more_than_three_latin_characters(sentence):
-        contains_lacuna = True
-    for marker in lacuna_markers:
+    lacuna_type = None
+    empty_lacuna_markers = ["?", "..", "…", "[.]", "[--]", "[ ]"]
+    other_lacuna_markers = ["[", "]", "{", "}", "(", ")"]
+    for marker in empty_lacuna_markers:
         if marker in sentence:
-            contains_lacuna = True
-            break
-    return contains_lacuna
+            lacuna_type = "empty"
+            return lacuna_type
+    for marker in other_lacuna_markers:
+        if marker in sentence:
+            lacuna_type = "reconstructed"
+            return lacuna_type
+    for character in sentence:
+        if unicodedata.name(character) == "COMBINING DOT BELOW":
+            lacuna_type = "reconstructed"
+            return lacuna_type
+    return lacuna_type
 
 
 def collect_sentences(file_list):
@@ -83,23 +93,20 @@ def collect_sentences(file_list):
 
                     if new_sentence_detected:
                         if len(temp_sentence) > 0:
-                            temp_sentence = re.sub(r"|", "", temp_sentence)
+                            temp_sentence = utils.filter_brackets(temp_sentence)
                             filtered_sentence = utils.filter_diacritics(temp_sentence)
-                            sentences.append(filtered_sentence)
+                            if not utils.skip_sentence(filtered_sentence):
+                                sentences.append(filtered_sentence)
                         temp_sentence = temp_orig_group_content
                         new_sentence_detected = False
                     else:
                         temp_sentence += temp_orig_group_content
 
+            temp_sentence = utils.filter_brackets(temp_sentence)
             filtered_sentence = utils.filter_diacritics(temp_sentence)
-
-            sentences.append(filtered_sentence)
+            if not utils.skip_sentence(filtered_sentence):
+                sentences.append(filtered_sentence)
     return sentences
-
-
-def has_more_than_three_latin_characters(input_string):
-    latin_count = sum(1 for char in input_string if char in string.ascii_letters)
-    return latin_count > 3
 
 
 def write_to_csv(file_name, sentence_list):
