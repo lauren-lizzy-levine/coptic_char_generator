@@ -90,8 +90,8 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-# nEpochs = 4
-nEpochs = 10
+nEpochs = 4
+#nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
 # nEpochs = 50

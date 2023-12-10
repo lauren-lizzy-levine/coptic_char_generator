@@ -15,6 +15,7 @@ class RNN(nn.Module):
         self.bos_id = sentence_piece.piece_to_id("<s>")
         self.eos_id = sentence_piece.piece_to_id("</s>")
         self.mask = sentence_piece.piece_to_id("<mask>")
+        self.user_mask = sentence_piece.piece_to_id("#")
 
         self.num_tokens = sentence_piece.get_piece_size()
         self.specs = specs + [self.num_tokens]
@@ -130,3 +131,26 @@ class RNN(nn.Module):
         total_mask = mask_count + random_sub + orig_token
 
         return data_item, total_mask
+
+    def actual_lacuna_mask_and_label(self, data_item, masked_sentence, filled_sentence=None):
+        if filled_sentence:
+            data_item.text = filled_sentence
+            filled_indexes = self.lookup_indexes(data_item.text)
+        else:
+            data_item.text = masked_sentence
+        data_item.indexes = self.lookup_indexes(masked_sentence)
+
+        sentence_length = len(data_item.indexes)
+        mask = [False] * sentence_length
+        labels = [-100] * sentence_length
+
+        for i in range(len(data_item.indexes)):
+            if data_item.indexes[i] == self.user_mask:
+                data_item.indexes[i] = self.mask
+                mask[i] = True
+                if filled_sentence:
+                    labels[i] = filled_indexes[i]
+        data_item.mask = mask
+        data_item.labels = labels
+
+        return data_item

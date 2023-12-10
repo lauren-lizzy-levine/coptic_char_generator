@@ -31,11 +31,11 @@ def read_datafiles(file_list):
     dev_sentences = reg_sentences_list[train_length:train_length + dev_test_length]
     test_sentences = reg_sentences_list[train_length + dev_test_length:]
 
-    reconstructed_lacuna_sentences = list(recon_lacuna_sentences)
-    empty_lacuna_sentences = list(empt_lacuna_sentences)
+    filled_reconstructed_lacuna_sentences, masked_reconstructed_lacuna_sentences = mask_lacunas(list(recon_lacuna_sentences))
+    _, empty_lacuna_sentences = mask_lacunas(list(empt_lacuna_sentences), reconstruction=False)
 
-    return train_sentences, dev_sentences, test_sentences, \
-            empty_lacuna_sentences, reconstructed_lacuna_sentences
+    return train_sentences, dev_sentences, test_sentences, empty_lacuna_sentences, \
+        filled_reconstructed_lacuna_sentences, masked_reconstructed_lacuna_sentences
 
 
 def detect_lacuna(sentence):
@@ -55,6 +55,55 @@ def detect_lacuna(sentence):
             lacuna_type = "reconstructed"
             return lacuna_type
     return lacuna_type
+
+
+def mask_lacunas(sentences, reconstruction=True):
+    if reconstruction:
+        filled_sentences = []
+        masked_sentences = []
+        for sentence in sentences:
+            filled_sentence = ""
+            for character in sentence:
+                if not (unicodedata.name(character) == "COMBINING DOT BELOW"\
+                        or character == "[" or character == "]"):
+                    filled_sentence += character
+            temp_masked_sentence = ""
+            for character in sentence:
+                if unicodedata.name(character) == "COMBINING DOT BELOW":
+                    temp_masked_sentence = temp_masked_sentence[:-1] + "#"
+                else:
+                    temp_masked_sentence += character
+            masked_sentence = ""
+            in_brackets = False
+            for character in temp_masked_sentence:
+                if character == "[":
+                    in_brackets = True
+                elif character == "]":
+                    in_brackets = False
+                else:
+                    if in_brackets:
+                        masked_sentence += "#"
+                    else:
+                        masked_sentence += character
+            filled_sentences.append(filled_sentence)
+            masked_sentences.append(masked_sentence)
+    else:
+        filled_sentences = None
+        masked_sentences = []
+        for sentence in sentences:
+            masked_sentence = ""
+            for character in sentence:
+                if not (unicodedata.name(character) == "COMBINING DOT BELOW"\
+                        or character == "[" or character == "]"):
+                    masked_sentence += character
+            dot_pattern = r'\.{2,}'  # matches 2 or more consecutive dots
+            masked_sentence = re.sub(dot_pattern, lambda match: "#" * len(match.group(0)), masked_sentence)
+            masked_sentence = re.sub("…", "#", masked_sentence)
+            masked_sentence = re.sub("\?", "#", masked_sentence)
+            masked_sentence = re.sub("--", "##", masked_sentence)
+            masked_sentences.append(masked_sentence)
+
+    return filled_sentences, masked_sentences
 
 
 def collect_sentences(file_list):
