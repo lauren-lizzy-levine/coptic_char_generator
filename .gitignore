@@ -5,4 +5,4 @@ coptic_data_processing.log
 *.pth
 coptic_sentences.csv
 data/*.csv
-*.csvgit
+*.csv
