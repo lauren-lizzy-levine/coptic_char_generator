@@ -5,16 +5,6 @@ from coptic_RNN import *
 import coptic_utils as utils
 
 
-def count_parameters(model):
-    total = 0
-    for name, p in model.named_parameters():
-        if p.dim() > 1:
-            logging.debug(f"{p.numel():,}\t{name}")
-            total += p.numel()
-
-    logging.info(f"total parameter count = {total:,}")
-
-
 def check_accuracy(target, orig_data_item):
     masked = 0
     correct = 0
@@ -344,3 +334,30 @@ def baseline_accuracy(model, data, data_indexes):
     logging.info(
         f"Random Baseline; dev masked total: {masked_total}, correct predictions: {correct_random}, baseline accuracy: {round(correct_random / masked_total, 3)}"
     )
+
+
+def predict(model, data_item):
+    logging.info(f"input text: {data_item.text}")
+
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    out = model([index_tensor])
+
+    # get target indexes
+    target = []
+    for emb in out[0]:
+        scores = emb
+        _, best = scores.max(0)
+        best = best.data.item()
+        target.append(best)
+
+    out_indexes = []
+
+    for i in range(len(data_item.indexes)):
+        if data_item.indexes[i] == model.mask:
+            out_indexes.append(target[i])
+        else:
+            out_indexes.append(data_item.indexes[i])
+
+    out_string = model.decode(out_indexes)
+
+    logging.info(f"output text: {out_string}")

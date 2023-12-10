@@ -2,6 +2,8 @@ import logging
 import os
 import sys
 import unicodedata
+import re
+import string
 
 import torch
 
@@ -85,10 +87,10 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-# nEpochs = 4
+nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
-nEpochs = 30
+# nEpochs = 30
 # nEpochs = 50
 
 L2_lambda = 0.0
@@ -129,6 +131,30 @@ def filter_diacritics(string):
     return new_string.lower()
 
 
+def count_parameters(model):
+    total = 0
+    for name, p in model.named_parameters():
+        if p.dim() > 1:
+            logging.debug(f"{p.numel():,}\t{name}")
+            total += p.numel()
+
+    logging.info(f"total parameter count = {total:,}")
+
+
+def read_lacuna_test_files(file_name, data_list):
+    with open(file_name, "r") as f:
+        file_text = f.read()
+        sentences = file_text.strip().split("\n")
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) == 0:
+                continue
+            data_list.append(sentence)
+
+    return data_list
+
+
 def read_datafile(file_name, data_list, num_sentences=100):
     with open(file_name, "r") as f:
         file_text = f.read()
@@ -148,6 +174,30 @@ def read_datafile(file_name, data_list, num_sentences=100):
         data_list = quotient * data_list + data_list[:remainder]
 
     return data_list
+
+
+def filter_brackets(input_string):
+    input_string = re.sub(r"\|", "", input_string)
+    input_string = re.sub(r"\{", "", input_string)
+    input_string = re.sub(r"\}", "", input_string)
+    input_string = re.sub(r"\(.*\)", "", input_string)
+    return input_string
+
+
+def skip_sentence(input_string):
+    skip = False
+    if has_more_than_one_latin_character(input_string):
+        skip = True
+    elif "[----]" in input_string:
+        skip = True
+    elif len(input_string) < 5:
+        skip = True
+    return skip
+
+
+def has_more_than_one_latin_character(input_string):
+    latin_count = sum(1 for char in input_string if char in string.ascii_letters)
+    return latin_count > 1
 
 
 def mask_input(model, file_name, mask_type, masking_strategy):

@@ -45,6 +45,13 @@ if __name__ == "__main__":
         help="create the data set partition",
         action="store_true",
     )
+    parser.add_argument(
+        "-ev",
+        "--eval",
+        required=False,
+        help="conduct evaluation for actual lacuna test sets",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     logger.info(f"start coptic data processing -- {datetime.datetime.now()}")
@@ -54,7 +61,8 @@ if __name__ == "__main__":
     dev_csv = "dev.csv"
     test_csv = "test.csv"
     empty_lacuna_csv = "test_empty_lacuna.csv"
-    reconstructed_lacuna_csv = "test_reconstructed_lacuna.csv"
+    filled_reconstructed_lacuna_csv = "filled_test_reconstructed_lacuna.csv"
+    masked_reconstructed_lacuna_csv = "masked_test_reconstructed_lacuna.csv"
     full_csv = "full_data.csv"
 
     if args.partition:
@@ -68,7 +76,8 @@ if __name__ == "__main__":
             dev_sentences,
             test_sentences,
             empty_lacuna_sentences,
-            reconstructed_lacuna_sentences,
+            filled_reconstructed_lacuna_sentences,
+            masked_reconstructed_lacuna_sentences,
         ) = coptic_char_data.read_datafiles(file_list)
         full_data = train_sentences + dev_sentences + test_sentences
         logger.info(f"train: {len(train_sentences)} sentences")
@@ -76,18 +85,19 @@ if __name__ == "__main__":
         logger.info(f"test: {len(test_sentences)} sentences")
         logger.info(f"full: {len(full_data)} sentences")
         logger.info(f"empty test: {len(empty_lacuna_sentences)} sentences")
-        logger.info(f"recon test: {len(reconstructed_lacuna_sentences)} sentences")
+        logger.info(f"recon test: {len(filled_reconstructed_lacuna_csv)} sentences")
 
         # write to partition files
-        coptic_char_data.write_to_csv(f"./data/{train_csv}", train_sentences)
-        coptic_char_data.write_to_csv(f"./data/{dev_csv}", dev_sentences)
-        coptic_char_data.write_to_csv(f"./data/{test_csv}", test_sentences)
-        coptic_char_data.write_to_csv(f"./data/{full_csv}", full_data)
+        coptic_char_data.write_to_csv(train_csv, train_sentences)
+        coptic_char_data.write_to_csv(dev_csv, dev_sentences)
+        coptic_char_data.write_to_csv(test_csv, test_sentences)
+        coptic_char_data.write_to_csv(full_csv, full_data)
+        coptic_char_data.write_to_csv(empty_lacuna_csv, empty_lacuna_sentences)
         coptic_char_data.write_to_csv(
-            f"./data/{empty_lacuna_csv}", empty_lacuna_sentences
+            filled_reconstructed_lacuna_csv, filled_reconstructed_lacuna_sentences
         )
         coptic_char_data.write_to_csv(
-            f"./data/{reconstructed_lacuna_csv}", reconstructed_lacuna_sentences
+            masked_reconstructed_lacuna_csv, masked_reconstructed_lacuna_sentences
         )
 
     model_name = "coptic_sp"
@@ -141,5 +151,54 @@ if __name__ == "__main__":
             mask=mask,
             mask_type=mask_type,
         )
+
+    if args.eval:
+        # run model on actual lacuna test sets etc.
+        filled_reconstructed_lacuna_csv = "filled_test_reconstructed_lacuna.csv"
+        masked_reconstructed_lacuna_csv = "masked_test_reconstructed_lacuna.csv"
+
+        # load sentences
+        filled_lacuna_data = []
+        file_path = f"./" + filled_reconstructed_lacuna_csv
+        filled_lacuna_data = read_lacuna_test_files(file_path, filled_lacuna_data)
+        logger.info(
+            f"File {filled_reconstructed_lacuna_csv} read in with {len(filled_lacuna_data)} lines"
+        )
+
+        masked_lacuna_data = []
+        file_path = f"./" + masked_reconstructed_lacuna_csv
+        masked_lacuna_data = read_lacuna_test_files(file_path, masked_lacuna_data)
+        logger.info(
+            f"File {masked_reconstructed_lacuna_csv} read in with {len(masked_lacuna_data)} lines"
+        )
+        # make data_items
+        reconstructed_data = []
+        for i in range(len(masked_lacuna_data)):
+            data_item = model.actual_lacuna_mask_and_label(
+                DataItem(), masked_lacuna_data[i], filled_lacuna_data[i]
+            )
+            reconstructed_data.append(data_item)
+        reconstructed_list = [i for i in range(len(reconstructed_data))]
+        # accuracy evaluation
+        accuracy_evaluation(model, reconstructed_data, reconstructed_list)
+
+        masked_empty_lacuna_csv = "test_empty_lacuna.csv"
+        # load sentences
+        empty_lacuna_data = []
+        file_path = f"./" + masked_empty_lacuna_csv
+        empty_lacuna_data = read_lacuna_test_files(file_path, empty_lacuna_data)
+        logger.info(
+            f"File {masked_empty_lacuna_csv} read in with {len(empty_lacuna_data)} lines"
+        )
+        # make data_items
+        empty_lacuna_data_items = []
+        for sentence in empty_lacuna_data:
+            data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
+            empty_lacuna_data_items.append(data_item)
+        # prediction
+        for i in range(len(empty_lacuna_data_items)):
+            predict(model, data_item)
+            if i >= 5:
+                break
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")
