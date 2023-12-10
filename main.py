@@ -110,18 +110,23 @@ if __name__ == "__main__":
         data = read_datafile(file_path, data)
         logger.info(f"File {csv_name} read in with {len(data)} lines")
 
+        training_data = []
+        mask = False
+
         if masking_strategy == "once":
             logger.info("Masking strategy is fixed, masking sentences...")
-            training_data = []
             for data_item in data:
-                masked_data_item, _ = model.mask_and_label_characters(data_item)
+                masked_data_item, _ = model.mask_and_label_characters(
+                    data_item, mask_type=mask_type
+                )
                 training_data.append(masked_data_item)
             logger.info("Masking complete")
-            mask = False
         elif masking_strategy == "dynamic":
             training_data = data
             mask = True
 
-        model = train_model(model, training_data, output_name=model_name, mask=mask)
+        model = train_model(
+            model, training_data, output_name=model_name, mask=mask, mask_type=mask_type
+        )
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")

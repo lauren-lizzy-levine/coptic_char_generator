@@ -38,8 +38,8 @@ def read_datafile(file_name, data_list, num_sentences=100):
             if len(sentence) == 0:
                 continue
             # For now (prelim model training), skip sentences with real lacunas
-            if "[" in sentence:
-                continue
+            # if "[" in sentence:
+            #     continue
             data_list.append(DataItem(text=sentence))
 
             if len(data_list) > num_sentences:
@@ -71,7 +71,14 @@ def check_accuracy(target, orig_data_item):
 
 
 def train_batch(
-    model, optimizer, criterion, data, data_indexes, update=True, mask=True
+    model,
+    optimizer,
+    criterion,
+    data,
+    data_indexes,
+    mask_type,
+    update=True,
+    mask=True,
 ):
     model.zero_grad()
     total_loss, total_tokens, total_chars = 0, 0, 0
@@ -85,7 +92,9 @@ def train_batch(
         data_item = data[i]
 
         if mask:
-            data_item, mask_count = model.mask_and_label_characters(data_item)
+            data_item, mask_count = model.mask_and_label_characters(
+                data_item, mask_type=mask_type
+            )
             total_masked += mask_count
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
@@ -128,7 +137,12 @@ def train_batch(
 
 
 def train_model(
-    model, train_data, dev_data=None, output_name="coptic_lacuna", mask=True
+    model,
+    train_data,
+    dev_data=None,
+    output_name="coptic_lacuna",
+    mask=True,
+    mask_type=None,
 ):
     data_list = [i for i in range(len(train_data))]
 
@@ -167,8 +181,9 @@ def train_model(
                 criterion,
                 train_data,
                 train_list[i : i + incremental_batch_size],
+                mask_type,
                 update=True,
-                mask=True,
+                mask=mask,
             )
             train_loss += loss
             train_tokens += num_tokens
@@ -190,7 +205,14 @@ def train_model(
             dev_masked,
             dev_correct,
         ) = train_batch(
-            model, optimizer, criterion, dev_data, dev_list, update=False, mask=True
+            model,
+            optimizer,
+            criterion,
+            dev_data,
+            dev_list,
+            mask_type,
+            update=False,
+            mask=mask,
         )
 
         if epoch == 0:
@@ -222,7 +244,7 @@ def train_model(
 
         test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
         # sample_masked += masked
         # sample_correct += correct
 
@@ -260,10 +282,10 @@ def train_model(
     return model
 
 
-def fill_masks(model, text, temp=0):
+def fill_masks(model, text, mask_type, temp=0):
     logging.info(f"prompt: {text}")
     test_data_item = DataItem(text=text)
-    data_item, _ = model.mask_and_label_characters(test_data_item)
+    data_item, _ = model.mask_and_label_characters(test_data_item, mask_type=mask_type)
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
     sample_out = model([index_tensor])
 
