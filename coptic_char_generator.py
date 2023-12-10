@@ -46,6 +46,20 @@ def read_datafile(file_name, data_list, num_sentences=100):
     return data_list
 
 
+def read_lacuna_test_files(file_name, data_list):
+    with open(file_name, "r") as f:
+        file_text = f.read()
+        sentences = file_text.strip().split("\n")
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) == 0:
+                continue
+            data_list.append(sentence)
+
+    return data_list
+
+
 def check_accuracy(target, orig_data_item):
     masked = 0
     correct = 0
@@ -345,3 +359,30 @@ def baseline_accuracy(model, data, data_indexes):
     logging.info(
         f"Random Baseline; dev masked total: {masked_total}, correct predictions: {correct_random}, baseline accuracy: {round(correct_random / masked_total, 3)}"
     )
+
+
+def predict(model, data_item):
+    logging.info(f"input text: {data_item.text}")
+
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    out = model([index_tensor])
+
+    # get target indexes
+    target = []
+    for emb in out[0]:
+        scores = emb
+        _, best = scores.max(0)
+        best = best.data.item()
+        target.append(best)
+
+    out_indexes = []
+
+    for i in range(len(data_item.indexes)):
+        if data_item.indexes[i] == model.mask:
+            out_indexes.append(target[i])
+        else:
+            out_indexes.append(data_item.indexes[i])
+
+    out_string = model.decode(out_indexes)
+
+    logging.info(f"output text: {out_string}")

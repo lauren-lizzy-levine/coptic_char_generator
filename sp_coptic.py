@@ -16,7 +16,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
 
     # params = params + ' --pad_id=3'					# include <pad> control symbol
     params = params + " --control_symbols=<mask>"  # ,<oov>'
-    # params = params + " --user_defined_symbols=<mask>"  # ,<oov>'
+    params = params + " --user_defined_symbols=#"  # ,<oov>'
 
     # trains a vocabulary and write 2 files: ./models/coptic_sp.model and ./models/coptic_sp.vocab
     if train:
@@ -31,6 +31,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     sp.Load(fn_model)
 
     logger.info(f"SentencePiece model {model_name} created")
+    #logger.info(sp.EncodeAsIds("##"))
 
     # print(sp.__dict__)
     # print(sp.this)

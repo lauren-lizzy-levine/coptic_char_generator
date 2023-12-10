@@ -2,6 +2,8 @@ import logging
 import os
 import sys
 import unicodedata
+import re
+import string
 
 import torch
 
@@ -88,8 +90,8 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-# nEpochs = 4
-nEpochs = 10
+nEpochs = 4
+#nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
 # nEpochs = 50
@@ -120,3 +122,27 @@ def filter_diacritics(string):
         ):
             new_string = new_string + character
     return new_string.lower()
+
+
+def filter_brackets(input_string):
+    input_string = re.sub(r"\|", "", input_string)
+    input_string = re.sub(r"\{", "", input_string)
+    input_string = re.sub(r"\}", "", input_string)
+    input_string = re.sub(r"\(.*\)", "", input_string)
+    return input_string
+
+
+def skip_sentence(input_string):
+    skip = False
+    if has_more_than_one_latin_character(input_string):
+        skip = True
+    elif "[----]" in input_string:
+        skip = True
+    elif len(input_string) < 5:
+        skip = True
+    return skip
+
+
+def has_more_than_one_latin_character(input_string):
+    latin_count = sum(1 for char in input_string if char in string.ascii_letters)
+    return latin_count > 1
