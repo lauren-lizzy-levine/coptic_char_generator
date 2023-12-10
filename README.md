@@ -31,3 +31,11 @@ out the `-sp` flag.
 ### Model Training (optional)
 
 To train the model, add `-tr` or `--train` to the command. 
+
+### Partition (optional)
+
+To create the data set partition, add `-p` or `--partion` to the command.
+
+### Evaluation (optional)
+
+To evaluate on the lacuna test sets, add `-e` or `--eval` to the command.

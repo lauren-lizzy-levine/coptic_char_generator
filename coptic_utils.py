@@ -142,7 +142,7 @@ def count_parameters(model):
 
 
 def read_lacuna_test_files(file_name, data_list):
-    with open(file_name, "r") as f:
+    with open(f"./data/{file_name}", "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
 
