@@ -79,13 +79,15 @@ if __name__ == "__main__":
         logger.info(f"recon test: {len(reconstructed_lacuna_sentences)} sentences")
 
         # write to partition files
-        coptic_char_data.write_to_csv(train_csv, train_sentences)
-        coptic_char_data.write_to_csv(dev_csv, dev_sentences)
-        coptic_char_data.write_to_csv(test_csv, test_sentences)
-        coptic_char_data.write_to_csv(full_csv, full_data)
-        coptic_char_data.write_to_csv(empty_lacuna_csv, empty_lacuna_sentences)
+        coptic_char_data.write_to_csv(f"./data/{train_csv}", train_sentences)
+        coptic_char_data.write_to_csv(f"./data/{dev_csv}", dev_sentences)
+        coptic_char_data.write_to_csv(f"./data/{test_csv}", test_sentences)
+        coptic_char_data.write_to_csv(f"./data/{full_csv}", full_data)
         coptic_char_data.write_to_csv(
-            reconstructed_lacuna_csv, reconstructed_lacuna_sentences
+            f"./data/{empty_lacuna_csv}", empty_lacuna_sentences
+        )
+        coptic_char_data.write_to_csv(
+            f"./data/{reconstructed_lacuna_csv}", reconstructed_lacuna_sentences
         )
 
     model_name = "coptic_sp"
@@ -99,7 +101,6 @@ if __name__ == "__main__":
     # step 3 - model training
     mask_type = args.masking
     masking_strategy = args.masking_strategy
-    logger.info(f"Mask type: {mask_type} - {masking_strategy}")
 
     if args.train:
         logger.info("Training a sentencepiece model")
@@ -120,43 +121,25 @@ if __name__ == "__main__":
             f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
         # Eval on Dev data
-        dev_data = []
-        file_path = f"./" + dev_csv
-        dev_data = read_datafile(file_path, dev_data)
+        dev_data, mask = mask_input(model, dev_csv, mask_type, masking_strategy)
         dev_list = [i for i in range(len(dev_data))]
-        fixed_dev_data = []
-        for data_item in dev_data:
-            masked_data_item, _ = model.mask_and_label_characters(data_item)
-            fixed_dev_data.append(masked_data_item)
-        accuracy_evaluation(model, fixed_dev_data, dev_list)
-        baseline_accuracy(model, fixed_dev_data, dev_list)
+        accuracy_evaluation(model, dev_data, dev_list)
+        baseline_accuracy(model, dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)
 
     if args.train:
-        data = []
-        file_path = f"./" + train_csv
-        data = read_datafile(file_path, data)
-        logger.info(f"File {train_csv} read in with {len(data)} lines")
-
-        training_data = []
-        mask = False
-
-        if masking_strategy == "once":
-            logger.info("Masking strategy is fixed, masking sentences...")
-            for data_item in data:
-                masked_data_item, _ = model.mask_and_label_characters(
-                    data_item, mask_type=mask_type
-                )
-                training_data.append(masked_data_item)
-            logger.info("Masking complete")
-        elif masking_strategy == "dynamic":
-            training_data = data
-            mask = True
+        training_data, mask = mask_input(model, train_csv, mask_type, masking_strategy)
+        dev_data, _ = mask_input(model, dev_csv, mask_type, masking_strategy)
 
         model = train_model(
-            model, training_data, output_name=model_name, mask=mask, mask_type=mask_type
+            model,
+            training_data,
+            dev_data=dev_data,
+            output_name=model_name,
+            mask=mask,
+            mask_type=mask_type,
         )
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")

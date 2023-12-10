@@ -4,4 +4,5 @@ coptic_data_processing.log
 *.vocab
 *.pth
 coptic_sentences.csv
-sp_input_coptic_sentences.csv
+data/*.csv
+*.csvgit

@@ -5,16 +5,6 @@ from coptic_RNN import *
 import coptic_utils as utils
 
 
-class DataItem:
-    def __init__(self, text=None, indexes=None, mask=None, labels=None):
-        self.text = text  # original text
-        self.indexes = indexes  # tensor of indexes of characters or tokens
-        self.mask = (
-            mask  # list of indexes same size as index, true when character is masked
-        )
-        self.labels = labels  # list of indexes for attention mask
-
-
 def count_parameters(model):
     total = 0
     for name, p in model.named_parameters():
@@ -23,27 +13,6 @@ def count_parameters(model):
             total += p.numel()
 
     logging.info(f"total parameter count = {total:,}")
-
-
-def read_datafile(file_name, data_list, num_sentences=100):
-    with open(file_name, "r") as f:
-        file_text = f.read()
-        sentences = file_text.strip().split("\n")
-
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) == 0:
-                continue
-            data_list.append(DataItem(text=sentence))
-
-            if len(data_list) > num_sentences:
-                break
-
-    if len(data_list) < num_sentences:
-        quotient, remainder = divmod(num_sentences, len(data_list))
-        data_list = quotient * data_list + data_list[:remainder]
-
-    return data_list
 
 
 def check_accuracy(target, orig_data_item):

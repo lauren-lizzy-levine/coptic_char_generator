@@ -100,6 +100,16 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 print(f"torch version & device: {torch.version.__version__, device}")
 
 
+class DataItem:
+    def __init__(self, text=None, indexes=None, mask=None, labels=None):
+        self.text = text  # original text
+        self.indexes = indexes  # tensor of indexes of characters or tokens
+        self.mask = (
+            mask  # list of indexes same size as index, true when character is masked
+        )
+        self.labels = labels  # list of indexes for attention mask
+
+
 def get_home_path():
     return os.path.expanduser("~")
 
@@ -117,3 +127,50 @@ def filter_diacritics(string):
         ):
             new_string = new_string + character
     return new_string.lower()
+
+
+def read_datafile(file_name, data_list, num_sentences=100):
+    with open(file_name, "r") as f:
+        file_text = f.read()
+        sentences = file_text.strip().split("\n")
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) == 0:
+                continue
+            data_list.append(DataItem(text=sentence))
+
+            if len(data_list) > num_sentences:
+                break
+
+    if len(data_list) < num_sentences:
+        quotient, remainder = divmod(num_sentences, len(data_list))
+        data_list = quotient * data_list + data_list[:remainder]
+
+    return data_list
+
+
+def mask_input(model, file_name, mask_type, masking_strategy):
+    logger.info(f"Mask type: {mask_type} - {masking_strategy}")
+
+    data = []
+    file_path = f"./data/" + file_name
+    data = read_datafile(file_path, data)
+    logger.info(f"File {file_name} read in with {len(data)} lines")
+
+    data_for_model = []
+    mask = False
+
+    if masking_strategy == "once":
+        logger.info(f"Masking strategy is {masking_strategy}, masking sentences...")
+        for data_item in data:
+            masked_data_item, _ = model.mask_and_label_characters(
+                data_item, mask_type=mask_type
+            )
+            data_for_model.append(masked_data_item)
+        logger.info("Masking complete")
+    elif masking_strategy == "dynamic":
+        data_for_model = data
+        mask = True
+
+    return data_for_model, mask

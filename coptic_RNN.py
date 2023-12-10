@@ -86,7 +86,6 @@ class RNN(nn.Module):
         return tokens
 
     def mask_and_label_characters(self, data_item, mask_type="random"):
-        print(mask_type)
         data_item.indexes = self.lookup_indexes(data_item.text)
 
         sentence_length = len(data_item.indexes)
