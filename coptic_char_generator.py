@@ -5,61 +5,6 @@ from coptic_RNN import *
 import coptic_utils as utils
 
 
-class DataItem:
-    def __init__(self, text=None, indexes=None, mask=None, labels=None):
-        self.text = text  # original text
-        self.indexes = indexes  # tensor of indexes of characters or tokens
-        self.mask = (
-            mask  # list of indexes same size as index, true when character is masked
-        )
-        self.labels = labels  # list of indexes for attention mask
-
-
-def count_parameters(model):
-    total = 0
-    for name, p in model.named_parameters():
-        if p.dim() > 1:
-            logging.debug(f"{p.numel():,}\t{name}")
-            total += p.numel()
-
-    logging.info(f"total parameter count = {total:,}")
-
-
-def read_datafile(file_name, data_list, num_sentences=100):
-    with open(file_name, "r") as f:
-        file_text = f.read()
-        sentences = file_text.strip().split("\n")
-
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) == 0:
-                continue
-            data_list.append(DataItem(text=sentence))
-
-            if len(data_list) > num_sentences:
-                break
-
-    if len(data_list) < num_sentences:
-        quotient, remainder = divmod(num_sentences, len(data_list))
-        data_list = quotient * data_list + data_list[:remainder]
-
-    return data_list
-
-
-def read_lacuna_test_files(file_name, data_list):
-    with open(file_name, "r") as f:
-        file_text = f.read()
-        sentences = file_text.strip().split("\n")
-
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) == 0:
-                continue
-            data_list.append(sentence)
-
-    return data_list
-
-
 def check_accuracy(target, orig_data_item):
     masked = 0
     correct = 0
@@ -69,8 +14,8 @@ def check_accuracy(target, orig_data_item):
         if orig_data_item.labels[j] > 0:
             # masked token
             masked += 1
-            #logger.info(f"actual labels: {orig_data_item.labels[j]}")
-            #logger.info(f"prediction: {target[j]}")
+            # logger.debug(f"actual labels: {orig_data_item.labels[j]}")
+            # logger.debug(f"prediction: {target[j]}")
             if target[j] == orig_data_item.labels[j]:
                 # prediction is correct
                 correct += 1
@@ -78,7 +23,16 @@ def check_accuracy(target, orig_data_item):
     return masked, correct
 
 
-def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
+def train_batch(
+    model,
+    optimizer,
+    criterion,
+    data,
+    data_indexes,
+    mask_type,
+    update=True,
+    mask=True,
+):
     model.zero_grad()
     total_loss, total_tokens, total_chars = 0, 0, 0
 
@@ -90,8 +44,11 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     for i in data_indexes:
         data_item = data[i]
 
-        # data_item, mask_count = model.mask_and_label_characters(data_item)
-        # total_masked += mask_count
+        if mask:
+            data_item, mask_count = model.mask_and_label_characters(
+                data_item, mask_type=mask_type
+            )
+            total_masked += mask_count
 
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         label_tensor = torch.tensor(data_item.labels, dtype=torch.int64).to(device)
@@ -132,7 +89,14 @@ def train_batch(model, optimizer, criterion, data, data_indexes, update=True):
     return total_loss, total_tokens, total_chars, total_masked, dev_masked, dev_correct
 
 
-def train_model(model, train_data, dev_data=None, output_name="charLM"):
+def train_model(
+    model,
+    train_data,
+    dev_data=None,
+    output_name="coptic_lacuna",
+    mask=True,
+    mask_type=None,
+):
     data_list = [i for i in range(len(train_data))]
 
     if dev_data is None:
@@ -170,7 +134,9 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
                 criterion,
                 train_data,
                 train_list[i : i + incremental_batch_size],
+                mask_type,
                 update=True,
+                mask=mask,
             )
             train_loss += loss
             train_tokens += num_tokens
@@ -197,12 +163,16 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
             criterion,
             dev_data,
             dev_list,
-            update=False,  # ???
+            mask_type,
+            update=False,
+            mask=mask,
         )
 
         if epoch == 0:
             logger.info(
-                f"train={len(train_list):,} {train_tokens:,} {train_chars:,} {train_chars / train_tokens:0.1f} dev={len(dev_list):,} {dev_tokens:,} {dev_chars:,} {dev_chars / dev_tokens:0.1f} bs={batch_size} lr={learning_rate} {model.specs}"
+                f"train={len(train_list):,} {train_tokens:,} {train_chars:,} {train_chars / train_tokens:0.1f} "
+                f"dev={len(dev_list):,} {dev_tokens:,} {dev_chars:,} {dev_chars / dev_tokens:0.1f} "
+                f"bs={batch_size} lr={learning_rate} {model.specs}"
             )
 
         logging.info(time.time())
@@ -219,39 +189,9 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
         sample_masked = 0
         sample_correct = 0
 
-        # test_sentence = "thisisanEnglishsentencewithnospaces."
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
         test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
+        _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
         # sample_masked += masked
         # sample_correct += correct
 
@@ -265,10 +205,10 @@ def train_model(model, train_data, dev_data=None, output_name="charLM"):
     return model
 
 
-def fill_masks(model, text, temp=0):
+def fill_masks(model, text, mask_type, temp=0):
     logging.info(f"prompt: {text}")
     test_data_item = DataItem(text=text)
-    data_item, _ = model.mask_and_label_characters(test_data_item)
+    data_item, _ = model.mask_and_label_characters(test_data_item, mask_type=mask_type)
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
     sample_out = model([index_tensor])
 
@@ -308,7 +248,7 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        # data_item, _ = model.mask_and_label_characters(data_item)
+        data_item.indexes = model.lookup_indexes(data_item.text)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
@@ -320,12 +260,12 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
-        #logger.info("In accuracy")
+        # logger.debug("In accuracy")
         masked, correct_guess = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess
 
-    if masked_total >= 0:
+    if masked_total > 0:
         logging.info(
             f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
         )
@@ -346,8 +286,13 @@ def baseline_accuracy(model, data, data_indexes):
     for i in data_indexes:
         data_item = data[i]
         most_common_char_target = [target_char_index] * len(data_item.labels)
-        random_target = [random.randint(3, model.num_tokens - 1) for i in range(len(data_item.labels))]
-        _, correct_guess_correct_most_common = check_accuracy(most_common_char_target, data_item)
+        random_target = [
+            random.randint(3, model.num_tokens - 1)
+            for i in range(len(data_item.labels))
+        ]
+        _, correct_guess_correct_most_common = check_accuracy(
+            most_common_char_target, data_item
+        )
         masked, correct_guess_random = check_accuracy(random_target, data_item)
         masked_total += masked
         correct_most_common_char += correct_guess_correct_most_common

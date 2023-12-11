@@ -86,7 +86,7 @@ class RNN(nn.Module):
         tokens = self.sentence_piece.decode(indexes)
         return tokens
 
-    def mask_and_label_characters(self, data_item):
+    def mask_and_label_characters(self, data_item, mask_type="random"):
         data_item.indexes = self.lookup_indexes(data_item.text)
 
         sentence_length = len(data_item.indexes)
@@ -97,42 +97,84 @@ class RNN(nn.Module):
         random_sub = 0
         orig_token = 0
 
-        for i in range(len(data_item.indexes)):
-            current_token = data_item.indexes[i]
-            r1 = random.random()
-            r2 = random.random()
+        if mask_type == "random":
+            for i in range(sentence_length):
+                current_token = data_item.indexes[i]
+                r_mask_status = random.random()
+                r_mask_type = random.random()
 
-            if r1 < self.masking_proportion:
-                if r2 < 0.8:
-                    # replace with MASK symbol
-                    replacement = self.mask
-                    mask_count += 1
-                elif r2 < 0.9:
-                    # replace with random character
-                    replacement = random.randint(3, self.num_tokens - 1)
-                    random_sub += 1
+                if r_mask_status < self.masking_proportion:
+                    if r_mask_type < 0.8:
+                        # replace with MASK symbol
+                        replacement = self.mask
+                        mask_count += 1
+                    elif r_mask_type < 0.9:
+                        # replace with random character
+                        replacement = random.randint(3, self.num_tokens - 1)
+                        random_sub += 1
+                    else:
+                        # retain original
+                        replacement = current_token
+                        orig_token += 1
+
+                    data_item.indexes[i] = replacement
+                    labels[i] = current_token
+
                 else:
-                    # retain original
-                    replacement = current_token
-                    orig_token += 1
+                    mask[i] = False
 
-                data_item.indexes[i] = replacement
-                labels[i] = current_token
+                data_item.mask = mask
+                data_item.labels = labels
 
-                # print(f"current: {current_token}, replacement: {replacement}, data_item: {data_item.masked_indexes[i]}")
+        elif mask_type == "smart":
+            r_mask_length = random.random()
+            r_start_loc = random.randint(0, sentence_length)
+            r_mask_type = random.random()
 
+            if r_mask_length <= 0.48:
+                mask_length = 1
+            elif 0.48 < r_mask_length <= 0.70:
+                mask_length = 2
+            elif 0.70 < r_mask_length <= 0.82:
+                mask_length = 3
             else:
-                mask[i] = False
+                mask_length = random.randint(4, 35)
 
-            data_item.mask = mask
-            data_item.labels = labels
+            mask_start = 0
+            for i in range(sentence_length):
+                current_token = data_item.indexes[i]
+                if i >= r_start_loc and mask_start < mask_length:
+                    if r_mask_type < 0.8:
+                        # replace with MASK symbol
+                        replacement = self.mask
+                        mask_count += 1
+                    elif r_mask_type < 0.9:
+                        # replace with random character
+                        replacement = random.randint(3, self.num_tokens - 1)
+                        random_sub += 1
+                    else:
+                        # retain original
+                        replacement = current_token
+                        orig_token += 1
 
-        logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
+                    data_item.indexes[i] = replacement
+                    labels[i] = current_token
+
+                    mask_start += 1
+                else:
+                    mask[i] = False
+
+                data_item.mask = mask
+                data_item.labels = labels
+
+        # logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
         total_mask = mask_count + random_sub + orig_token
 
         return data_item, total_mask
 
-    def actual_lacuna_mask_and_label(self, data_item, masked_sentence, filled_sentence=None):
+    def actual_lacuna_mask_and_label(
+        self, data_item, masked_sentence, filled_sentence=None
+    ):
         if filled_sentence:
             data_item.text = filled_sentence
             filled_indexes = self.lookup_indexes(data_item.text)

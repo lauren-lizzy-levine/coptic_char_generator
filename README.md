@@ -10,10 +10,16 @@ is to clone the data repo into your Desktop, unzip the `sahidic.ot` and `sahidic
 ## Command Line Arguments
 To run the project, the command is just `python main.py`
 
-### Mask Type  (required)
-Masking can be random (15% masking) or smart (based on the text). 
+### Masking 
+#### Mask Type (required)
+Masking can be random (per character, by masking percentage) or smart (sections of masking, based on distribution of the text). 
 
-Add `-m <random, smart>` or `--masking <random,smart>` to the command.
+Add `-m <random, smart>` or `--masking <random, smart>` to the command.
+
+#### Masking Strategy (required)
+Masking can happen only once (right after data is read in) or dynamic (re-masked in each training epoch). 
+
+Add `-ms <once, dynamic>` or `--masking-strategy <once, dynamic>` to the command.
 
 ### SentencePiece (optional)
 
@@ -25,3 +31,11 @@ out the `-sp` flag.
 ### Model Training (optional)
 
 To train the model, add `-tr` or `--train` to the command. 
+
+### Partition (optional)
+
+To create the data set partition, add `-p` or `--partion` to the command.
+
+### Evaluation (optional)
+
+To evaluate on the lacuna test sets, add `-e` or `--eval` to the command.

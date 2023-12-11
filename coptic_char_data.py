@@ -28,14 +28,25 @@ def read_datafiles(file_list):
     dev_test_length = int(reg_sent_len * 0.05)
     # partition the list
     train_sentences = reg_sentences_list[:train_length]
-    dev_sentences = reg_sentences_list[train_length:train_length + dev_test_length]
-    test_sentences = reg_sentences_list[train_length + dev_test_length:]
+    dev_sentences = reg_sentences_list[train_length : train_length + dev_test_length]
+    test_sentences = reg_sentences_list[train_length + dev_test_length :]
 
-    filled_reconstructed_lacuna_sentences, masked_reconstructed_lacuna_sentences = mask_lacunas(list(recon_lacuna_sentences))
-    _, empty_lacuna_sentences = mask_lacunas(list(empt_lacuna_sentences), reconstruction=False)
+    (
+        filled_reconstructed_lacuna_sentences,
+        masked_reconstructed_lacuna_sentences,
+    ) = mask_lacunas(list(recon_lacuna_sentences))
+    _, empty_lacuna_sentences = mask_lacunas(
+        list(empt_lacuna_sentences), reconstruction=False
+    )
 
-    return train_sentences, dev_sentences, test_sentences, empty_lacuna_sentences, \
-        filled_reconstructed_lacuna_sentences, masked_reconstructed_lacuna_sentences
+    return (
+        train_sentences,
+        dev_sentences,
+        test_sentences,
+        empty_lacuna_sentences,
+        filled_reconstructed_lacuna_sentences,
+        masked_reconstructed_lacuna_sentences,
+    )
 
 
 def detect_lacuna(sentence):
@@ -64,8 +75,11 @@ def mask_lacunas(sentences, reconstruction=True):
         for sentence in sentences:
             filled_sentence = ""
             for character in sentence:
-                if not (unicodedata.name(character) == "COMBINING DOT BELOW"\
-                        or character == "[" or character == "]"):
+                if not (
+                    unicodedata.name(character) == "COMBINING DOT BELOW"
+                    or character == "["
+                    or character == "]"
+                ):
                     filled_sentence += character
             temp_masked_sentence = ""
             for character in sentence:
@@ -94,16 +108,21 @@ def mask_lacunas(sentences, reconstruction=True):
         for sentence in sentences:
             masked_sentence = ""
             for character in sentence:
-                if not (unicodedata.name(character) == "COMBINING DOT BELOW"\
-                        or character == "[" or character == "]"):
+                if not (
+                    unicodedata.name(character) == "COMBINING DOT BELOW"
+                    or character == "["
+                    or character == "]"
+                ):
                     masked_sentence += character
-            dot_pattern = r'\.{2,}'  # matches 2 or more consecutive dots
-            masked_sentence = re.sub(dot_pattern, lambda match: "#" * len(match.group(0)), masked_sentence)
+            dot_pattern = r"\.{2,}"  # matches 2 or more consecutive dots
+            masked_sentence = re.sub(
+                dot_pattern, lambda match: "#" * len(match.group(0)), masked_sentence
+            )
             masked_sentence = re.sub("…", "#", masked_sentence)
             masked_sentence = re.sub("\?", "#", masked_sentence)
             masked_sentence = re.sub("--", "##", masked_sentence)
 
-            if not len(set(masked_sentence)) == 1: # skip completely masked sentences
+            if not len(set(masked_sentence)) == 1:  # skip completely masked sentences
                 masked_sentences.append(masked_sentence)
 
     return filled_sentences, masked_sentences
@@ -162,7 +181,7 @@ def collect_sentences(file_list):
 
 
 def write_to_csv(file_name, sentence_list):
-    with open(file_name, "w") as csvfile:
+    with open(f"./data/{file_name}", "w") as csvfile:
         for sentence in sentence_list:
             sent = sentence + "\n"
             csvfile.write(sent)

@@ -31,7 +31,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     sp.Load(fn_model)
 
     logger.info(f"SentencePiece model {model_name} created")
-    #logger.info(sp.EncodeAsIds("##"))
+    # logger.info(sp.EncodeAsIds("##"))
 
     # print(sp.__dict__)
     # print(sp.this)
