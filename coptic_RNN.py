@@ -127,28 +127,36 @@ class RNN(nn.Module):
                 data_item.labels = labels
 
         elif mask_type == "smart":
-            r_mask_length = random.random()
-            r_start_loc = random.randint(0, sentence_length)
-            r_mask_type = random.random()
+            r_mask_quantity = random.randint(1, 5)
 
-            if r_mask_length <= 0.48:
-                mask_length = 1
-            elif 0.48 < r_mask_length <= 0.70:
-                mask_length = 2
-            elif 0.70 < r_mask_length <= 0.82:
-                mask_length = 3
-            else:
-                mask_length = random.randint(4, 35)
+            mask_index = [0] * sentence_length
+            i = 0
+
+            while i < r_mask_quantity:
+                r_start_loc = random.randint(0, sentence_length)
+                r_mask_length = random.random()
+                if r_mask_length <= 0.48:
+                    mask_length = 1
+                elif 0.48 < r_mask_length <= 0.70:
+                    mask_length = 2
+                elif 0.70 < r_mask_length <= 0.82:
+                    mask_length = 3
+                else:
+                    mask_length = random.randint(4, 35)
+                mask_end = r_start_loc + mask_length
+                mask_type = random.random()
+                mask_index[r_start_loc:mask_end] = [mask_type] * mask_length
+                i += 1
 
             mask_start = 0
             for i in range(sentence_length):
                 current_token = data_item.indexes[i]
-                if i >= r_start_loc and mask_start < mask_length:
-                    if r_mask_type < 0.8:
+                if mask_index[i] > 0:
+                    if mask_index[i] < 0.8:
                         # replace with MASK symbol
                         replacement = self.mask
                         mask_count += 1
-                    elif r_mask_type < 0.9:
+                    elif mask_index[i] < 0.9:
                         # replace with random character
                         replacement = random.randint(3, self.num_tokens - 1)
                         random_sub += 1
