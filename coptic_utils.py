@@ -155,7 +155,7 @@ def read_lacuna_test_files(file_name, data_list):
     return data_list
 
 
-def read_datafile(file_name, data_list, num_sentences=100):
+def read_datafile(file_name, data_list, num_sentences=10):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")

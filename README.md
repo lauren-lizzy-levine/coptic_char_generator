@@ -12,7 +12,7 @@ To run the project, the command is just `python main.py`
 
 ### Masking 
 #### Mask Type (required)
-Masking can be random (characters by percentage) or smart (based on details around the text). 
+Masking can be random (per character, by masking percentage) or smart (sections of masking, based on distribution of the text). 
 
 Add `-m <random, smart>` or `--masking <random, smart>` to the command.
 
