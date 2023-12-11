@@ -131,7 +131,7 @@ if __name__ == "__main__":
             f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
         # Eval on Dev data
-        dev_data, mask = mask_input(model, dev_csv, mask_type, masking_strategy)
+        dev_data, mask = mask_input(model, dev_csv, mask_type, "once")
         dev_list = [i for i in range(len(dev_data))]
         accuracy_evaluation(model, dev_data, dev_list)
         baseline_accuracy(model, dev_data, dev_list)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     if args.train:
         training_data, mask = mask_input(model, train_csv, mask_type, masking_strategy)
-        dev_data, _ = mask_input(model, dev_csv, mask_type, masking_strategy)
+        dev_data, _ = mask_input(model, dev_csv, mask_type, "once")
 
         model = train_model(
             model,

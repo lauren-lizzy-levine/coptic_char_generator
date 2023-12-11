@@ -189,39 +189,9 @@ def train_model(
         sample_masked = 0
         sample_correct = 0
 
-        # test_sentence = "thisisanEnglishsentencewithnospaces."
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
         test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
         _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        # test_sentence = "ⲙ̅ⲡϥ̅ⲟⲩⲱϣⲉϭⲱ̅ϣⲁⲁⲧⲉⲡⲣⲟⲑⲉⲥⲙⲓⲁⲙ̅ⲡⲉϥⲁϩⲉ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "Ⲁϥⲛⲁⲩⲉϩⲏⲗⲓⲁⲥⲉϥⲡⲏⲧ̅ⲁϥⲁⲛⲁⲗⲁⲃⲃⲁⲛⲉⲙ̅ⲙⲟϥⲁϥⲁⲁϥⲛ̅ⲣⲙ̅ⲙ̅ⲡⲉ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "Ⲟⲩⲁⲣⲭⲓⲉⲣⲉⲩⲥⲡⲉⲉⲟⲗϫⲉⲛ̅ⲧⲁϥⲧⲁⲗⲟϥⲉϩⲣⲁⲓ̈ϩⲁⲣⲟⲛⲙ̅ⲙⲓⲛⲙ̅ⲙⲟϥ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
-
-        test_sentence = "ⲟⲩϩⲟⲟⲩⲇⲉⲉⲃⲟⲗϩⲛⲟⲩϩⲟⲟⲩⲁⲓⲣⲡⲙⲡϣⲁⲁⲡϫ︤ⲥ︥ⲧⲁϩⲙⲉⲧϣⲁⲧⲉⲕⲙⲛⲧⲉⲓⲱⲧ·"
-        # test_sentence = utils.filter_diacritics(test_sentence)
-        # _, masked, correct = fill_masks(model, test_sentence, temp=0)
         # sample_masked += masked
         # sample_correct += correct
 
@@ -278,7 +248,7 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        # data_item, _ = model.mask_and_label_characters(data_item)
+        data_item.indexes = model.lookup_indexes(data_item.text)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 

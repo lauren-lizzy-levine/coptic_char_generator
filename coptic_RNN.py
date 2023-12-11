@@ -141,27 +141,19 @@ class RNN(nn.Module):
                 mask_length = random.randint(4, 35)
 
             mask_start = 0
-            print(
-                f"sentence {sentence_length}, start loc {r_start_loc}, mask length: {mask_length}"
-            )
-
             for i in range(sentence_length):
                 current_token = data_item.indexes[i]
                 if i >= r_start_loc and mask_start < mask_length:
-                    print(f"start masking: {r_start_loc}, i {i}, {r_mask_type}")
                     if r_mask_type < 0.8:
-                        print("mask")
                         # replace with MASK symbol
                         replacement = self.mask
                         mask_count += 1
                     elif r_mask_type < 0.9:
                         # replace with random character
-                        print("rand")
                         replacement = random.randint(3, self.num_tokens - 1)
                         random_sub += 1
                     else:
                         # retain original
-                        print("orig")
                         replacement = current_token
                         orig_token += 1
 
@@ -175,9 +167,7 @@ class RNN(nn.Module):
                 data_item.mask = mask
                 data_item.labels = labels
 
-            print(data_item.mask)
-
-        logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
+        # logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
         total_mask = mask_count + random_sub + orig_token
 
         return data_item, total_mask
