@@ -99,8 +99,9 @@ def mask_lacunas(sentences, reconstruction=True):
                         masked_sentence += "#"
                     else:
                         masked_sentence += character
-            filled_sentences.append(filled_sentence)
-            masked_sentences.append(masked_sentence)
+            if not len(set(masked_sentence)) == 1:  # skip completely masked sentences
+                filled_sentences.append(filled_sentence)
+                masked_sentences.append(masked_sentence)
     else:
         filled_sentences = None
         masked_sentences = []
@@ -120,7 +121,9 @@ def mask_lacunas(sentences, reconstruction=True):
             masked_sentence = re.sub("…", "#", masked_sentence)
             masked_sentence = re.sub("\?", "#", masked_sentence)
             masked_sentence = re.sub("--", "##", masked_sentence)
-            masked_sentences.append(masked_sentence)
+
+            if not len(set(masked_sentence)) == 1:  # skip completely masked sentences
+                masked_sentences.append(masked_sentence)
 
     return filled_sentences, masked_sentences
 
