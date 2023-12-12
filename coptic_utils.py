@@ -169,10 +169,6 @@ def read_datafile(file_name, data_list, num_sentences=5000):
             if len(data_list) > num_sentences:
                 break
 
-    # if len(data_list) < num_sentences:
-    #     quotient, remainder = divmod(num_sentences, len(data_list))
-    #     data_list = quotient * data_list + data_list[:remainder]
-
     return data_list
 
 
