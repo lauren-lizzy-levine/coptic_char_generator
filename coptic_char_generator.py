@@ -8,21 +8,25 @@ import coptic_utils as utils
 def check_accuracy(target, orig_data_item):
     masked = 0
     correct = 0
+    mismatch = 0
 
     if len(target) != len(orig_data_item.labels):
-        logging.info("Model predicted different number of characters - sentence skipped")
-        return masked, correct
-    for j in range(len(orig_data_item.labels)):
-        if orig_data_item.labels[j] > 0:
-            # masked token
-            masked += 1
-            # logger.debug(f"actual labels: {orig_data_item.labels[j]}")
-            # logger.debug(f"prediction: {target[j]}")
-            if target[j] == orig_data_item.labels[j]:
-                # prediction is correct
-                correct += 1
+        logging.info(
+            "Model predicted different number of characters - sentence skipped"
+        )
+        mismatch += 1
+    else:
+        for j in range(len(orig_data_item.labels)):
+            if orig_data_item.labels[j] > 0:
+                # masked token
+                masked += 1
+                # logger.debug(f"actual labels: {orig_data_item.labels[j]}")
+                # logger.debug(f"prediction: {target[j]}")
+                if target[j] == orig_data_item.labels[j]:
+                    # prediction is correct
+                    correct += 1
 
-    return masked, correct
+    return masked, correct, mismatch
 
 
 def train_batch(
@@ -83,7 +87,7 @@ def train_batch(
             # logger.debug(f"self attn labels: {data_item.labels}")
             # logger.debug(f"target labels: {target}")
             # logger.info("No update")
-            dev_masked, dev_correct = check_accuracy(target, data_item)
+            dev_masked, dev_correct, _ = check_accuracy(target, data_item)
 
     if update:
         optimizer.step()
@@ -238,7 +242,7 @@ def fill_masks(model, text, mask_type, temp=0):
     logging.info(f"orig vs predicted char: {pairs}")
     logging.info(f"orig vs predicted char: {pairs_index}")
 
-    sample_masked, sample_correct = check_accuracy(target, test_data_item)
+    sample_masked, sample_correct, _ = check_accuracy(target, test_data_item)
     return target_text, sample_masked, sample_correct
 
 
@@ -246,6 +250,7 @@ def accuracy_evaluation(model, data, data_indexes):
     # first pass at simple accuracy function
     masked_total = 0
     correct = 0
+    mismatch_total = 0
 
     for i in data_indexes:
         # get model output
@@ -263,17 +268,18 @@ def accuracy_evaluation(model, data, data_indexes):
             target.append(best)
 
         # logger.debug("In accuracy")
-        masked, correct_guess = check_accuracy(target, data_item)
+        masked, correct_guess, mismatch = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess
+        mismatch_total += mismatch
 
     if masked_total > 0:
         logging.info(
-            f"dev masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}"
+            f"masked total: {masked_total}, correct predictions: {correct}, simple accuracy: {round(correct/masked_total, 3)}, mismatch: {mismatch_total}"
         )
     else:
         logging.info(
-            f"dev masked total: {masked_total}, correct predictions: {correct}"
+            f"masked total: {masked_total}, correct predictions: {correct}, mismatch {mismatch_total}"
         )
 
 
@@ -292,10 +298,10 @@ def baseline_accuracy(model, data, data_indexes):
             random.randint(3, model.num_tokens - 1)
             for i in range(len(data_item.labels))
         ]
-        _, correct_guess_correct_most_common = check_accuracy(
+        _, correct_guess_correct_most_common, _ = check_accuracy(
             most_common_char_target, data_item
         )
-        masked, correct_guess_random = check_accuracy(random_target, data_item)
+        masked, correct_guess_random, _ = check_accuracy(random_target, data_item)
         masked_total += masked
         correct_most_common_char += correct_guess_correct_most_common
         correct_random += correct_guess_random
