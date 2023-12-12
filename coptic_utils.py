@@ -28,8 +28,8 @@ share = False
 # embed_size = 50
 # embed_size = 100
 # embed_size = 150
-embed_size = 200
-# embed_size = 300
+# embed_size = 200
+embed_size = 300
 
 if share:
     proj_size = embed_size
@@ -40,16 +40,16 @@ else:
     # proj_size = 350
 
 # hidden_size = 100
-# hidden_size = 150
+hidden_size = 150
 # hidden_size = 200
-hidden_size = 300
+# hidden_size = 300
 # hidden_size = 400
 # hidden_size = 500
 # hidden_size = 1000
 
-# rnn_nLayers = 2
+rnn_nLayers = 2
 # rnn_nLayers = 3
-rnn_nLayers = 4
+# rnn_nLayers = 4
 
 dropout = 0.0
 # dropout = 0.1
@@ -155,7 +155,7 @@ def read_lacuna_test_files(file_name, data_list):
     return data_list
 
 
-def read_datafile(file_name, data_list, num_sentences=10):
+def read_datafile(file_name, data_list, num_sentences=5000):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
@@ -166,12 +166,12 @@ def read_datafile(file_name, data_list, num_sentences=10):
                 continue
             data_list.append(DataItem(text=sentence))
 
-            #if len(data_list) > num_sentences:
-            #    break
+            if len(data_list) > num_sentences:
+                break
 
-    if len(data_list) < num_sentences:
-        quotient, remainder = divmod(num_sentences, len(data_list))
-        data_list = quotient * data_list + data_list[:remainder]
+    # if len(data_list) < num_sentences:
+    #     quotient, remainder = divmod(num_sentences, len(data_list))
+    #     data_list = quotient * data_list + data_list[:remainder]
 
     return data_list
 
