@@ -166,8 +166,8 @@ def read_datafile(file_name, data_list, num_sentences=10):
                 continue
             data_list.append(DataItem(text=sentence))
 
-            if len(data_list) > num_sentences:
-                break
+            #if len(data_list) > num_sentences:
+            #    break
 
     if len(data_list) < num_sentences:
         quotient, remainder = divmod(num_sentences, len(data_list))

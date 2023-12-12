@@ -9,7 +9,9 @@ def check_accuracy(target, orig_data_item):
     masked = 0
     correct = 0
 
-    assert len(target) == len(orig_data_item.labels)
+    if len(target) != len(orig_data_item.labels):
+        logging.info("Model predicted different number of characters - sentence skipped")
+        return masked, correct
     for j in range(len(orig_data_item.labels)):
         if orig_data_item.labels[j] > 0:
             # masked token
@@ -281,7 +283,7 @@ def baseline_accuracy(model, data, data_indexes):
     correct_random = 0
     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
     target_char_index = model.sentence_piece.piece_to_id("ⲉ")
-    logging.info(target_char_index)
+    # logging.info(target_char_index)
 
     for i in data_indexes:
         data_item = data[i]

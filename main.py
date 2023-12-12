@@ -153,6 +153,19 @@ if __name__ == "__main__":
         )
 
     if args.eval:
+        # run model on test set
+        random_test_data, _ = mask_input(model, test_csv, "random", "once")
+        random_test_list = [i for i in range(len(random_test_data))]
+        smart_test_data, _ = mask_input(model, test_csv, "smart", "once")
+        smart_test_list = [i for i in range(len(smart_test_data))]
+
+        logging.info("Test Random:")
+        accuracy_evaluation(model, random_test_data, random_test_list)
+        baseline_accuracy(model, random_test_data, random_test_list)
+        logging.info("Test Smart:")
+        accuracy_evaluation(model, smart_test_data, smart_test_list)
+        baseline_accuracy(model, smart_test_data, smart_test_list)
+
         # run model on actual lacuna test sets etc.
         filled_reconstructed_lacuna_csv = "filled_test_reconstructed_lacuna.csv"
         masked_reconstructed_lacuna_csv = "masked_test_reconstructed_lacuna.csv"
@@ -180,7 +193,9 @@ if __name__ == "__main__":
             reconstructed_data.append(data_item)
         reconstructed_list = [i for i in range(len(reconstructed_data))]
         # accuracy evaluation
+        logging.info("Test Reconstructed:")
         accuracy_evaluation(model, reconstructed_data, reconstructed_list)
+        baseline_accuracy(model, reconstructed_data, reconstructed_list)
 
         masked_empty_lacuna_csv = "test_empty_lacuna.csv"
         # load sentences
