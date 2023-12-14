@@ -51,8 +51,8 @@ rnn_nLayers = 2
 # rnn_nLayers = 3
 # rnn_nLayers = 4
 
-dropout = 0.0
-# dropout = 0.1
+# dropout = 0.0
+dropout = 0.1
 
 masking_proportion = 0.15
 
@@ -87,14 +87,15 @@ batch_size_multiplier = 1
 
 # nEpochs = 1
 # nEpochs = 2
-nEpochs = 4
+nEpochs = 3
+# nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
 # nEpochs = 50
 
-L2_lambda = 0.0
-# L2_lambda = 0.001
+# L2_lambda = 0.0
+L2_lambda = 0.001
 
 model_path = "models/"
 
@@ -117,7 +118,8 @@ def get_home_path():
 
 
 UNICODE_MARK_NONSPACING = "Mn"
-MN_KEEP_LIST = ["COMBINING DOT BELOW"]
+COMBINING_DOT = "COMBINING DOT BELOW"
+MN_KEEP_LIST = [COMBINING_DOT]
 
 
 def filter_diacritics(string):
@@ -166,8 +168,8 @@ def read_datafile(file_name, data_list, num_sentences=5000):
                 continue
             data_list.append(DataItem(text=sentence))
 
-            if len(data_list) > num_sentences:
-                break
+            # if len(data_list) > num_sentences:
+            #     break
 
     return data_list
 

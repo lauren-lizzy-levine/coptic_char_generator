@@ -15,7 +15,9 @@ for sentence in sentences:
     total_char += len(sentence)
 
 ave_sentence_len = total_char / len(sentences)
-with open("./coptic_char_generator/data/masked_test_reconstructed_lacuna.csv", "r") as f_masked:
+with open(
+    "./coptic_char_generator/data/masked_test_reconstructed_lacuna.csv", "r"
+) as f_masked:
     file_text = f_masked.read()
     sentences_masked = file_text.strip().split("\n")
 
@@ -66,7 +68,25 @@ for item in sentences_masked_gaps:
     masks_per_sentence.setdefault(len(item), 0)
 masks_per_sentence[len(item)] += 1
 masks_per_sentence
-{0: 8, 1: 501, 2: 154, 3: 49, 4: 26, 5: 16, 6: 10, 7: 10, 8: 6, 9: 4, 10: 1, 12: 1, 13: 2, 14: 1, 15: 1, 19: 1, 20: 1}
+{
+    0: 8,
+    1: 501,
+    2: 154,
+    3: 49,
+    4: 26,
+    5: 16,
+    6: 10,
+    7: 10,
+    8: 6,
+    9: 4,
+    10: 1,
+    12: 1,
+    13: 2,
+    14: 1,
+    15: 1,
+    19: 1,
+    20: 1,
+}
 
 masks_per_sentence_empty = {}
 for item in sentences_empty:
@@ -99,12 +119,58 @@ for gap_list in sentences_empty_gaps:
             masks_empty_each[len(gap)] += 1
 
 masks_empty_each
-{3: 285, 1: 401, 6: 40, 2: 145, 8: 23, 4: 69, 12: 8, 10: 19, 14: 4, 5: 65, 9: 18, 20: 3, 22: 2, 13: 4, 27: 1, 18: 2,
- 7: 19, 15: 4, 36: 1, 11: 4, 16: 1, 26: 1, 49: 1}
+{
+    3: 285,
+    1: 401,
+    6: 40,
+    2: 145,
+    8: 23,
+    4: 69,
+    12: 8,
+    10: 19,
+    14: 4,
+    5: 65,
+    9: 18,
+    20: 3,
+    22: 2,
+    13: 4,
+    27: 1,
+    18: 2,
+    7: 19,
+    15: 4,
+    36: 1,
+    11: 4,
+    16: 1,
+    26: 1,
+    49: 1,
+}
 sorted_masks_empty_each = dict(sorted(masks_empty_each.items()))
 sorted_masks_empty_each
-{1: 401, 2: 145, 3: 285, 4: 69, 5: 65, 6: 40, 7: 19, 8: 23, 9: 18, 10: 19, 11: 4, 12: 8, 13: 4, 14: 4, 15: 4, 16: 1,
- 18: 2, 20: 3, 22: 2, 26: 1, 27: 1, 36: 1, 49: 1}
+{
+    1: 401,
+    2: 145,
+    3: 285,
+    4: 69,
+    5: 65,
+    6: 40,
+    7: 19,
+    8: 23,
+    9: 18,
+    10: 19,
+    11: 4,
+    12: 8,
+    13: 4,
+    14: 4,
+    15: 4,
+    16: 1,
+    18: 2,
+    20: 3,
+    22: 2,
+    26: 1,
+    27: 1,
+    36: 1,
+    49: 1,
+}
 
 masks_gaps_each = {}
 for gap_list in sentences_masked_gaps:
@@ -115,8 +181,33 @@ for gap_list in sentences_masked_gaps:
 
 sorted_masks_gaps_each = dict(sorted(masks_gaps_each.items()))
 sorted_masks_gaps_each
-{1: 704, 2: 328, 3: 185, 4: 89, 5: 49, 6: 40, 7: 21, 8: 19, 9: 9, 10: 9, 11: 1, 12: 2, 13: 1, 16: 2, 18: 1, 19: 1,
- 20: 1, 21: 1, 24: 1, 28: 1, 30: 1, 39: 1, 44: 1, 48: 1, 83: 1}
+{
+    1: 704,
+    2: 328,
+    3: 185,
+    4: 89,
+    5: 49,
+    6: 40,
+    7: 21,
+    8: 19,
+    9: 9,
+    10: 9,
+    11: 1,
+    12: 2,
+    13: 1,
+    16: 2,
+    18: 1,
+    19: 1,
+    20: 1,
+    21: 1,
+    24: 1,
+    28: 1,
+    30: 1,
+    39: 1,
+    44: 1,
+    48: 1,
+    83: 1,
+}
 
 gap_total_masks = 0
 gap_count_masks = 0

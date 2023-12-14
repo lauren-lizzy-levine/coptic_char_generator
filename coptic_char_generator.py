@@ -20,8 +20,6 @@ def check_accuracy(target, orig_data_item):
             if orig_data_item.labels[j] > 0:
                 # masked token
                 masked += 1
-                # logger.debug(f"actual labels: {orig_data_item.labels[j]}")
-                # logger.debug(f"prediction: {target[j]}")
                 if target[j] == orig_data_item.labels[j]:
                     # prediction is correct
                     correct += 1
@@ -66,7 +64,6 @@ def train_batch(
 
         masked_out = out[0, masked_idx]
         masked_label = label_tensor[masked_idx]
-        # logging.info(f"masked label: {masked_label}")
         loss = criterion(masked_out, masked_label)
 
         total_loss += loss.data.item()
@@ -198,10 +195,10 @@ def train_model(
         test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
         test_sentence = utils.filter_diacritics(test_sentence)
         _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
-        # sample_masked += masked
-        # sample_correct += correct
+        sample_masked += masked
+        sample_correct += correct
 
-        # logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
+        logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
         torch.save(model, f"{model_path}/{output_name}.pth")
 
@@ -289,7 +286,6 @@ def baseline_accuracy(model, data, data_indexes):
     correct_random = 0
     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
     target_char_index = model.sentence_piece.piece_to_id("ⲉ")
-    # logging.info(target_char_index)
 
     for i in data_indexes:
         data_item = data[i]

@@ -65,14 +65,10 @@ class RNN(nn.Module):
         embed = self.scale_up(embed)
 
         output, _ = self.rnn(embed)
-        # print(f"B, T, hidden: {out.shape}")
-        # print(f"embed: {embed.shape}")
         output = self.dropout(output)
 
-        output = self.out(output)  # chars
-        # print(f"B, T, embed: {embed.shape}")
+        output = self.out(output)
         output = torch.matmul(output, torch.t(self.embed.weight))
-        # print(f"B, T, vocab size: {out.shape}")
 
         return output
 
@@ -175,7 +171,6 @@ class RNN(nn.Module):
                 data_item.mask = mask
                 data_item.labels = labels
 
-        # logger.debug(f"mask: {mask_count}, random: {random_sub}, orig: {orig_token}")
         total_mask = mask_count + random_sub + orig_token
 
         return data_item, total_mask
