@@ -1,4 +1,3 @@
-import csv
 import regex as re
 
 import coptic_utils as utils
@@ -62,7 +61,7 @@ def detect_lacuna(sentence):
             lacuna_type = "reconstructed"
             return lacuna_type
     for character in sentence:
-        if unicodedata.name(character) == "COMBINING DOT BELOW":
+        if unicodedata.name(character) == utils.COMBINING_DOT:
             lacuna_type = "reconstructed"
             return lacuna_type
     return lacuna_type
@@ -76,14 +75,14 @@ def mask_lacunas(sentences, reconstruction=True):
             filled_sentence = ""
             for character in sentence:
                 if not (
-                    unicodedata.name(character) == "COMBINING DOT BELOW"
+                    unicodedata.name(character) == utils.COMBINING_DOT
                     or character == "["
                     or character == "]"
                 ):
                     filled_sentence += character
             temp_masked_sentence = ""
             for character in sentence:
-                if unicodedata.name(character) == "COMBINING DOT BELOW":
+                if unicodedata.name(character) == utils.COMBINING_DOT:
                     temp_masked_sentence = temp_masked_sentence[:-1] + "#"
                 else:
                     temp_masked_sentence += character
@@ -109,7 +108,7 @@ def mask_lacunas(sentences, reconstruction=True):
             masked_sentence = ""
             for character in sentence:
                 if not (
-                    unicodedata.name(character) == "COMBINING DOT BELOW"
+                    unicodedata.name(character) == utils.COMBINING_DOT
                     or character == "["
                     or character == "]"
                 ):
@@ -135,7 +134,6 @@ def collect_sentences(file_list):
         with open(file_name, "r") as f:
             file_text = f.read()
             tt_file = file_text.strip().split("\n")
-            # logger.debug(f"Total lines in {file_name}: {len(tt_file)}")
 
             temp_sentence = ""
             temp_orig_group_content = ""

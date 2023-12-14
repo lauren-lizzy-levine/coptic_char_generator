@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # step 2 - sentence piece (on training)
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
-            full_csv, f"{model_name}", vocab_size=1000, train=True
+            f"./data/{full_csv}", f"{model_name}", vocab_size=1000, train=True
         )
 
     # step 3 - model training
