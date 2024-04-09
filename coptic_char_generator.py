@@ -252,7 +252,8 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        data_item.indexes = model.lookup_indexes(data_item.text)
+        #print(data_item.text)
+        #data_item.indexes = model.lookup_indexes(data_item.text)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 

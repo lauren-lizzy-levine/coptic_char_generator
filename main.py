@@ -52,6 +52,13 @@ if __name__ == "__main__":
         help="conduct evaluation for actual lacuna test sets",
         action="store_true",
     )
+    parser.add_argument(
+        "-pr",
+        "--predict",
+        required=False,
+        help="sentence to predict",
+        action="store",
+    )
     args = parser.parse_args()
 
     logger.info(f"start coptic data processing -- {datetime.datetime.now()}")
@@ -100,7 +107,7 @@ if __name__ == "__main__":
             masked_reconstructed_lacuna_csv, masked_reconstructed_lacuna_sentences
         )
 
-    model_name = "coptic_sp"
+    model_name = "coptic_sp_smart_dynamic"
 
     # step 2 - sentence piece (on training)
     if args.sentencepiece:
@@ -131,10 +138,10 @@ if __name__ == "__main__":
             f"Load model: {model} with specs: embed_size: {model.specs[0]}, hidden_size: {model.specs[1]}, proj_size: {model.specs[2]}, rnn n layers: {model.specs[3]}, share: {model.specs[4]}, dropout: {model.specs[5]}"
         )
         # Eval on Dev data
-        dev_data, mask = mask_input(model, dev_csv, mask_type, "once")
-        dev_list = [i for i in range(len(dev_data))]
-        accuracy_evaluation(model, dev_data, dev_list)
-        baseline_accuracy(model, dev_data, dev_list)
+        #dev_data, mask = mask_input(model, dev_csv, mask_type, "once")
+        #dev_list = [i for i in range(len(dev_data))]
+        #accuracy_evaluation(model, dev_data, dev_list)
+        #baseline_accuracy(model, dev_data, dev_list)
 
     logger.info(model)
     count_parameters(model)
@@ -212,8 +219,14 @@ if __name__ == "__main__":
             empty_lacuna_data_items.append(data_item)
         # prediction
         for i in range(len(empty_lacuna_data_items)):
-            predict(model, data_item)
+            predict(model, empty_lacuna_data_items[i])
             if i >= 5:
                 break
 
+    if args.predict:
+        sentence = args.predict
+        data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
+        predict(model, data_item)
+
     logger.info(f"end generator -- {datetime.datetime.now()}\n")
+
