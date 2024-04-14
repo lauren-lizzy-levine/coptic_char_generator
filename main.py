@@ -59,6 +59,13 @@ if __name__ == "__main__":
         help="sentence to predict",
         action="store",
     )
+    parser.add_argument(
+        "-r",
+        "--rank",
+        required=False,
+        help="ranking likelihood of options",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     logger.info(f"start coptic data processing -- {datetime.datetime.now()}")
@@ -227,6 +234,16 @@ if __name__ == "__main__":
         sentence = args.predict
         data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
         predict(model, data_item)
+
+    if args.rank:
+        sentence = "Ⲁⲩⲱⲁϥϫⲡⲟⲛ̄ⲥⲏⲑϩⲛⲡⲙⲁⲉⲧⲙⲙⲁⲩⲛ̄ϭⲓⲁⲇⲁⲙⲁⲥⲕⲁⲧⲁⲑⲓⲕⲱⲛ###########"
+        options = ["ⲙ̄ⲡⲁⲩⲧⲟⲅⲉⲛⲏⲥ", "ⲙ̄ⲡⲛⲟⲩⲧⲉⲙ̄ⲡⲟⲩ"] # options should have same number of characters to be comparable
+        char_indexes = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+        ranking = rank(model, sentence, options, char_indexes)
+        print("Ranking:")
+        print("(option, log_sum)")
+        for option in ranking:
+            print(option)
 
     logger.info(f"end generator -- {datetime.datetime.now()}\n")
 

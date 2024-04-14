@@ -3,6 +3,8 @@ from random import shuffle
 
 from coptic_RNN import *
 import coptic_utils as utils
+import torch.nn.functional as nnf
+import numpy
 
 
 def check_accuracy(target, orig_data_item):
@@ -336,3 +338,46 @@ def predict(model, data_item):
     out_string = model.decode(out_indexes)
 
     logging.info(f"output text: {out_string}")
+
+
+def rank(model, sentence, options, char_indexes):
+    # filter diacritics
+    sentence = utils.filter_diacritics(sentence)
+    data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
+    option_indexes = []
+    option_probs = []
+    for i in range(len(options)):
+        options[i] = utils.filter_diacritics(options[i])
+        option_indexes.append(model.lookup_indexes(options[i]))
+        option_probs.append([])
+
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    out = model([index_tensor])
+
+    # get target indexes
+    target = []
+    char_index = 0
+    for emb in out[0]:
+        scores = emb
+        probabilities = nnf.softmax(scores, dim=0)
+        _, best = scores.max(0)
+        best = best.data.item()
+        target.append(best)
+        if char_index in char_indexes:
+            current = char_indexes.index(char_index)
+            for i in range(len(options)):
+                option_index = option_indexes[i][current]
+                prob = probabilities[option_index]
+                option_probs[i].append(prob)
+        char_index += 1
+
+    option_log_sums = []
+    for opt in option_probs:
+        opt_log_sum = torch.sum(torch.log(torch.tensor(opt)))
+        option_log_sums.append(opt_log_sum)
+    option_log_sums = numpy.array(option_log_sums)
+    sorted_index = numpy.argsort(option_log_sums)[::-1]
+    ranking = []
+    for index in sorted_index:
+        ranking.append((options[index], option_log_sums[index]))
+    return ranking
