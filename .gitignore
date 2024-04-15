@@ -7,3 +7,4 @@ coptic_sentences.csv
 data/*.csv
 *.csv
 .DS_Store
+.idea

@@ -124,6 +124,9 @@ def train_model(
 
     start = time.time()
     bs = batch_size
+    prev_dev_loss = 0
+    prev_train_loss = 0
+
     for epoch in range(nEpochs):
         if epoch > 0:
             bs *= batch_size_multiplier
@@ -180,32 +183,39 @@ def train_model(
                 f"bs={batch_size} lr={learning_rate} {model.specs}"
             )
 
-        logging.info(time.time())
         msg_trn = f"{train_loss / train_tokens:8.4f} {train_loss / train_chars:8.4f}"
         msg_dev = f"{dev_loss / dev_tokens:8.4f} {dev_loss / dev_chars:8.4f}"
         logger.info(
             f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- incremental_batch_size: {incremental_batch_size:4} time elapsed: {time.time() - start:6.1f}"
         )
+        train_loss = train_loss / train_chars
+        dev_loss = dev_loss / dev_chars
+
+        if train_loss < prev_train_loss and dev_loss > prev_dev_loss:
+            logger.info("early exit")
+            break
+
+        prev_dev_loss = dev_loss
+        prev_train_loss = train_loss
 
         logging.info(
             f"dev masked total: {dev_masked}, correct predictions: {dev_correct}, simple accuracy: {round(dev_correct / dev_masked, 3)}"
         )
-
-        sample_masked = 0
-        sample_correct = 0
-
-        test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
-        test_sentence = utils.filter_diacritics(test_sentence)
-        _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
-        sample_masked += masked
-        sample_correct += correct
-
-        logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
-
         torch.save(model, f"{model_path}/{output_name}.pth")
 
+        # sample_masked = 0
+        # sample_correct = 0
+        #
+        # test_sentence = "ϯⲙⲟⲕⲙⲉⲕⲙⲙⲟⲓⲉⲓⲥϩⲉⲛⲣⲟⲙⲡⲉⲉⲧⲙⲧⲣⲉⲣⲱⲙⲉϭⲛϣⲁϫⲉⲉϫⲱⲕⲁⲧⲁⲗⲁⲁⲩⲛⲥⲙⲟⲧ·"
+        # test_sentence = utils.filter_diacritics(test_sentence)
+        # _, masked, correct = fill_masks(model, test_sentence, mask_type, temp=0)
+        # sample_masked += masked
+        # sample_correct += correct
+        #
+        # logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
+
     accuracy_evaluation(model, dev_data, dev_list)
-    # baseline_accuracy(model, dev_data, dev_list)
+    baseline_accuracy(model, dev_data, dev_list)
 
     return model
 
@@ -254,8 +264,6 @@ def accuracy_evaluation(model, data, data_indexes):
     for i in data_indexes:
         # get model output
         data_item = data[i]
-        #print(data_item.text)
-        #data_item.indexes = model.lookup_indexes(data_item.text)
         index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
         out = model([index_tensor])
 
@@ -267,7 +275,6 @@ def accuracy_evaluation(model, data, data_indexes):
             best = best.data.item()
             target.append(best)
 
-        # logger.debug("In accuracy")
         masked, correct_guess, mismatch = check_accuracy(target, data_item)
         masked_total += masked
         correct += correct_guess

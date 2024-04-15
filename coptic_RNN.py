@@ -183,6 +183,7 @@ class RNN(nn.Module):
             filled_indexes = self.lookup_indexes(data_item.text)
         else:
             data_item.text = masked_sentence
+
         data_item.indexes = self.lookup_indexes(masked_sentence)
 
         sentence_length = len(data_item.indexes)

@@ -99,8 +99,9 @@ def mask_lacunas(sentences, reconstruction=True):
                     else:
                         masked_sentence += character
             if not len(set(masked_sentence)) == 1:  # skip completely masked sentences
-                filled_sentences.append(filled_sentence)
-                masked_sentences.append(masked_sentence)
+                    if masked_sentence.count("#") <= 5:
+                        filled_sentences.append(filled_sentence)
+                        masked_sentences.append(masked_sentence)
     else:
         filled_sentences = None
         masked_sentences = []

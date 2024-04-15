@@ -180,10 +180,6 @@ if __name__ == "__main__":
         accuracy_evaluation(model, smart_test_data, smart_test_list)
         baseline_accuracy(model, smart_test_data, smart_test_list)
 
-        # run model on actual lacuna test sets etc.
-        filled_reconstructed_lacuna_csv = "filled_test_reconstructed_lacuna.csv"
-        masked_reconstructed_lacuna_csv = "masked_test_reconstructed_lacuna.csv"
-
         # load sentences
         filled_lacuna_data = []
         file_path = f"./" + filled_reconstructed_lacuna_csv
@@ -205,30 +201,31 @@ if __name__ == "__main__":
                 DataItem(), masked_lacuna_data[i], filled_lacuna_data[i]
             )
             reconstructed_data.append(data_item)
+
         reconstructed_list = [i for i in range(len(reconstructed_data))]
         # accuracy evaluation
         logging.info("Test Reconstructed:")
         accuracy_evaluation(model, reconstructed_data, reconstructed_list)
-        baseline_accuracy(model, reconstructed_data, reconstructed_list)
+        # baseline_accuracy(model, reconstructed_data, reconstructed_list)
 
-        masked_empty_lacuna_csv = "test_empty_lacuna.csv"
-        # load sentences
-        empty_lacuna_data = []
-        file_path = f"./" + masked_empty_lacuna_csv
-        empty_lacuna_data = read_lacuna_test_files(file_path, empty_lacuna_data)
-        logger.info(
-            f"File {masked_empty_lacuna_csv} read in with {len(empty_lacuna_data)} lines"
-        )
+        # masked_empty_lacuna_csv = "test_empty_lacuna.csv"
+        # # load sentences
+        # empty_lacuna_data = []
+        # file_path = f"./" + masked_empty_lacuna_csv
+        # empty_lacuna_data = read_lacuna_test_files(file_path, empty_lacuna_data)
+        # logger.info(
+        #     f"File {masked_empty_lacuna_csv} read in with {len(empty_lacuna_data)} lines"
+        # )
         # make data_items
-        empty_lacuna_data_items = []
-        for sentence in empty_lacuna_data:
-            data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
-            empty_lacuna_data_items.append(data_item)
-        # prediction
-        for i in range(len(empty_lacuna_data_items)):
-            predict(model, empty_lacuna_data_items[i])
-            if i >= 5:
-                break
+        # empty_lacuna_data_items = []
+        # for sentence in empty_lacuna_data:
+        #     data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
+        #     empty_lacuna_data_items.append(data_item)
+        # # prediction
+        # for i in range(len(empty_lacuna_data_items)):
+        #     predict(model, empty_lacuna_data_items[i])
+        #     if i >= 5:
+        #         break
 
     if args.predict:
         sentence = args.predict
