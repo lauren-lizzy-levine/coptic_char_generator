@@ -3,6 +3,8 @@ import regex as re
 import coptic_utils as utils
 import unicodedata
 
+RECONSTRUCTED_LACUNA_MAX = 100
+# setting this to 5 cuts down from 788 lines --> 618 but improves accuracy from 0.333 --> 0.429
 
 def read_datafiles(file_list):
     recon_lacuna_sentences = set()
@@ -99,9 +101,9 @@ def mask_lacunas(sentences, reconstruction=True):
                     else:
                         masked_sentence += character
             if not len(set(masked_sentence)) == 1:  # skip completely masked sentences
-                    if masked_sentence.count("#") <= 5:
-                        filled_sentences.append(filled_sentence)
-                        masked_sentences.append(masked_sentence)
+                if masked_sentence.count("#") <= RECONSTRUCTED_LACUNA_MAX:
+                    filled_sentences.append(filled_sentence)
+                    masked_sentences.append(masked_sentence)
     else:
         filled_sentences = None
         masked_sentences = []

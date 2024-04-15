@@ -188,6 +188,7 @@ def train_model(
         logger.info(
             f"{epoch} tr loss {msg_trn} -- dev loss {msg_dev} -- incremental_batch_size: {incremental_batch_size:4} time elapsed: {time.time() - start:6.1f}"
         )
+
         train_loss = train_loss / train_chars
         dev_loss = dev_loss / dev_chars
 
@@ -215,7 +216,7 @@ def train_model(
         # logging.info(f"sample accuracy: {round(sample_correct/sample_masked, 3)}")
 
     accuracy_evaluation(model, dev_data, dev_list)
-    baseline_accuracy(model, dev_data, dev_list)
+    # baseline_accuracy(model, dev_data, dev_list)
 
     return model
 
