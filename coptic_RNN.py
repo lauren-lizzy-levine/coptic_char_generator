@@ -44,7 +44,11 @@ class RNN(nn.Module):
             batch_first=True,
         )
 
-        self.out = nn.Linear(hidden_size, embed_size)
+        if not self.share:
+            self.out = nn.Linear(hidden_size, embed_size)
+        else:
+            self.scale_down = nn.Linear(hidden_size, embed_size)
+
         self.dropout = nn.Dropout(dropout)
 
         for p in self.parameters():
@@ -67,8 +71,12 @@ class RNN(nn.Module):
         output, _ = self.rnn(embed)
         output = self.dropout(output)
 
-        output = self.out(output)
-        output = torch.matmul(output, torch.t(self.embed.weight))
+        if not self.share:
+            output = self.out(output)
+        else:
+            # use embedding table as output layer
+            output = self.scale_down(output)
+            output = torch.matmul(output, torch.t(self.embed.weight))
 
         return output
 
@@ -183,6 +191,7 @@ class RNN(nn.Module):
             filled_indexes = self.lookup_indexes(data_item.text)
         else:
             data_item.text = masked_sentence
+
         data_item.indexes = self.lookup_indexes(masked_sentence)
 
         sentence_length = len(data_item.indexes)

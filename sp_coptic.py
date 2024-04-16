@@ -12,7 +12,7 @@ def create_sentencepiece_model(files, model_name, vocab_size=1000, train=True):
     # optional parameters
     params = params + " --vocab_size=" + str(vocab_size)  # default: 8000
     params = params + " --character_coverage=1.0"
-    params = params + " --model_type=char"
+    params = params + " --model_type=char" # <unigram (default), bpe, char, word>
 
     # params = params + ' --pad_id=3'					# include <pad> control symbol
     params = params + " --control_symbols=<mask>"  # ,<oov>'

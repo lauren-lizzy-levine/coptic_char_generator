@@ -21,15 +21,15 @@ file_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stdout_handler)
 
-share = False
-# share = True  # share embedding table with output layer
+# share = False
+share = True  # share embedding table with output layer
 
 # embed_size = 20
 # embed_size = 50
 # embed_size = 100
 # embed_size = 150
-# embed_size = 200
-embed_size = 300
+embed_size = 200
+# embed_size = 300
 
 if share:
     proj_size = embed_size
@@ -40,19 +40,19 @@ else:
     # proj_size = 350
 
 # hidden_size = 100
-hidden_size = 150
+# hidden_size = 150
 # hidden_size = 200
-# hidden_size = 300
+hidden_size = 300
 # hidden_size = 400
 # hidden_size = 500
 # hidden_size = 1000
 
-rnn_nLayers = 2
+# rnn_nLayers = 2
 # rnn_nLayers = 3
-# rnn_nLayers = 4
+rnn_nLayers = 4
 
-# dropout = 0.0
-dropout = 0.1
+dropout = 0.0
+# dropout = 0.1
 
 masking_proportion = 0.15
 
@@ -80,22 +80,22 @@ batch_size = 1
 # batch_size = 20
 
 # increase the batch size every epoch by this factor
-batch_size_multiplier = 1
-# batch_size_multiplier = 1.4
+# batch_size_multiplier = 1
+batch_size_multiplier = 1.4
 # batch_size_multiplier = 1.6
 # batch_size_multiplier = 2
 
 # nEpochs = 1
 # nEpochs = 2
-nEpochs = 3
+# nEpochs = 3
 # nEpochs = 4
 # nEpochs = 10
 # nEpochs = 20
 # nEpochs = 30
-# nEpochs = 50
+nEpochs = 50
 
-# L2_lambda = 0.0
-L2_lambda = 0.001
+L2_lambda = 0.0
+# L2_lambda = 0.001
 
 model_path = "models/"
 
@@ -157,7 +157,7 @@ def read_lacuna_test_files(file_name, data_list):
     return data_list
 
 
-def read_datafile(file_name, data_list, num_sentences=5000):
+def read_datafile(file_name, data_list, num_sentences=10):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
