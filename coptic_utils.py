@@ -168,8 +168,8 @@ def read_datafile(file_name, data_list, num_sentences=10):
                 continue
             data_list.append(DataItem(text=sentence))
 
-            if len(data_list) > num_sentences:
-                break
+            # if len(data_list) > num_sentences:
+            #     break
 
     return data_list
 
