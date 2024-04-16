@@ -21,8 +21,8 @@ file_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stdout_handler)
 
-share = False
-# share = True  # share embedding table with output layer
+# share = False
+share = True  # share embedding table with output layer
 
 # embed_size = 20
 # embed_size = 50
@@ -157,7 +157,7 @@ def read_lacuna_test_files(file_name, data_list):
     return data_list
 
 
-def read_datafile(file_name, data_list, num_sentences=1000):
+def read_datafile(file_name, data_list, num_sentences=10):
     with open(file_name, "r") as f:
         file_text = f.read()
         sentences = file_text.strip().split("\n")
@@ -167,9 +167,9 @@ def read_datafile(file_name, data_list, num_sentences=1000):
             if len(sentence) == 0:
                 continue
             data_list.append(DataItem(text=sentence))
-            #
-            # if len(data_list) > num_sentences:
-            #     break
+
+            if len(data_list) > num_sentences:
+                break
 
     return data_list
 
