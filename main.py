@@ -206,7 +206,7 @@ if __name__ == "__main__":
         # accuracy evaluation
         logging.info("Test Reconstructed:")
         accuracy_evaluation(model, reconstructed_data, reconstructed_list)
-        # baseline_accuracy(model, reconstructed_data, reconstructed_list)
+        baseline_accuracy(model, reconstructed_data, reconstructed_list)
 
         # masked_empty_lacuna_csv = "test_empty_lacuna.csv"
         # # load sentences

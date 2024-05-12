@@ -5,6 +5,7 @@ from coptic_RNN import *
 import coptic_utils as utils
 import torch.nn.functional as nnf
 import numpy
+import json
 
 
 def check_accuracy(target, orig_data_item):
@@ -295,9 +296,16 @@ def baseline_accuracy(model, data, data_indexes):
     masked_total = 0
     correct_most_common_char = 0
     correct_random = 0
+    correct_trigram = 0
     # Assuming ⲉ is actually the most common...need to confirm with descriptive stats for data
     target_char_index = model.sentence_piece.piece_to_id("ⲉ")
-
+    # Load tri-gram look-up if already constructed, else construct it
+    try:
+        with open('data/trigram_lookup.json', 'r') as file:
+            trigram_lookup = json.load(file)
+    except:
+        trigram_lookup = utils.construct_trigram_lookup()
+    count_rand = 0
     for i in data_indexes:
         data_item = data[i]
         most_common_char_target = [target_char_index] * len(data_item.labels)
@@ -305,19 +313,48 @@ def baseline_accuracy(model, data, data_indexes):
             random.randint(3, model.num_tokens - 1)
             for i in range(len(data_item.labels))
         ]
+        # make trigram prediction target
+        trigram_target = []
+        for j in range(len(data_item.labels)):
+            if data_item.labels[j] > 0:
+                # if label is above 0, use trigram lookup
+                if len(trigram_target) >= 2:
+                    look_up_key = model.decode(trigram_target[-2]) + model.decode(trigram_target[-1])
+                elif len(trigram_target) == 1:
+                    look_up_key = '<s>' + model.decode(trigram_target[-1])
+                else:
+                    look_up_key = '<s><s>'
+                if look_up_key in trigram_lookup:
+                    y = trigram_lookup[look_up_key]
+                    coptic_char = max(y, key=lambda x: y[x])
+                    coptic_char_index = model.sentence_piece.piece_to_id(coptic_char)
+                    trigram_target.append(coptic_char_index)
+                else:
+                    # if trigram lookup fails, resort to random
+                    count_rand += 1
+                    trigram_target.append(random.randint(3, model.num_tokens - 1))
+            else:
+                # if label is 0, keep what is in the data item
+                trigram_target.append(data_item.indexes[j])
+
         _, correct_guess_correct_most_common, _ = check_accuracy(
             most_common_char_target, data_item
         )
         masked, correct_guess_random, _ = check_accuracy(random_target, data_item)
+        _, correct_guess_trigram, _ = check_accuracy(trigram_target, data_item)
         masked_total += masked
         correct_most_common_char += correct_guess_correct_most_common
         correct_random += correct_guess_random
-
+        correct_trigram += correct_guess_trigram
+    #print(count_rand)
     logging.info(
         f"Most Common Char Baseline; dev masked total: {masked_total}, correct predictions: {correct_most_common_char}, baseline accuracy: {round(correct_most_common_char / masked_total, 3)}"
     )
     logging.info(
         f"Random Baseline; dev masked total: {masked_total}, correct predictions: {correct_random}, baseline accuracy: {round(correct_random / masked_total, 3)}"
+    )
+    logging.info(
+        f"Trigram Baseline; dev masked total: {masked_total}, correct predictions: {correct_trigram}, baseline accuracy: {round(correct_trigram / masked_total, 3)}"
     )
 
 

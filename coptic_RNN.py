@@ -88,7 +88,7 @@ class RNN(nn.Module):
         return indexes
 
     def decode(self, indexes):
-        print(indexes)
+        #print(indexes)
         tokens = self.sentence_piece.decode(indexes)
         return tokens
 

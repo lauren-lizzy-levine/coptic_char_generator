@@ -4,6 +4,10 @@ import sys
 import unicodedata
 import re
 import string
+import json
+import nltk
+from nltk.util import ngrams
+from collections import Counter
 
 import torch
 
@@ -222,3 +226,35 @@ def mask_input(model, file_name, mask_type, masking_strategy):
         mask = True
 
     return data_for_model, mask
+
+
+def construct_trigram_lookup():
+    # read in training data
+    with open(f"./data/train.csv", "r") as f:
+        file_text = f.read()
+        sentences = file_text.strip().split("\n")
+
+    ngram_counts = Counter()
+    for sentence in sentences:
+        sentence = sentence.strip()
+        ngrams_obj = ngrams(sentence, 3, pad_left=True, left_pad_symbol='<s>')
+        ngram_counts.update(ngrams_obj)
+
+    look_up = {}
+    for entry in ngram_counts:
+        first_second = entry[0] + entry[1]
+        third = entry[2]
+        if first_second in look_up:
+            if third in look_up[first_second]:
+                # it never should be...
+                look_up[first_second][third] += ngram_counts[entry]
+            else:
+                look_up[first_second][third] = ngram_counts[entry]
+        else:
+            look_up[first_second] = {entry[2]: ngram_counts[entry]}
+
+    # write look_up tp file
+    with open(f"./data/trigram_lookup.json", 'w') as json_file:
+        json.dump(look_up, json_file, indent=4)
+
+    return look_up
