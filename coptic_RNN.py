@@ -73,6 +73,7 @@ class RNN(nn.Module):
 
         if not self.share:
             output = self.out(output)
+            output = torch.matmul(output, torch.t(self.embed.weight)) # this was added as a fix
         else:
             # use embedding table as output layer
             output = self.scale_down(output)
@@ -87,6 +88,7 @@ class RNN(nn.Module):
         return indexes
 
     def decode(self, indexes):
+        print(indexes)
         tokens = self.sentence_piece.decode(indexes)
         return tokens
 

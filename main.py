@@ -114,7 +114,7 @@ if __name__ == "__main__":
             masked_reconstructed_lacuna_csv, masked_reconstructed_lacuna_sentences
         )
 
-    model_name = "coptic_sp_smart_dynamic"
+    model_name = "coptic_smart_once_april_best"#"coptic_sp_smart_dynamic"
 
     # step 2 - sentence piece (on training)
     if args.sentencepiece:
@@ -233,9 +233,9 @@ if __name__ == "__main__":
         predict(model, data_item)
 
     if args.rank:
-        sentence = "Ⲁⲩⲱⲁϥϫⲡⲟⲛ̄ⲥⲏⲑϩⲛⲡⲙⲁⲉⲧⲙⲙⲁⲩⲛ̄ϭⲓⲁⲇⲁⲙⲁⲥⲕⲁⲧⲁⲑⲓⲕⲱⲛ###########"
-        options = ["ⲙ̄ⲡⲁⲩⲧⲟⲅⲉⲛⲏⲥ", "ⲙ̄ⲡⲛⲟⲩⲧⲉⲙ̄ⲡⲟⲩ"] # options should have same number of characters to be comparable
-        char_indexes = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+        sentence = "ⲛⲛⲉⲧⲛⲟⲩⲱϣϥⲛⲟⲩⲕⲁⲥⲉⲃⲟⲗⲛϩⲏⲧϥⲉⲕⲉⲁⲥⲡⲉϫⲁϥⲛⲧⲉ###ⲛⲟⲩⲟⲩϣⲏⲛⲟⲩⲱⲧⲉⲧⲉⲧⲛⲉⲟⲩⲟⲙϥⲕⲁⲧⲁⲛⲉⲧⲙⲡⲁⲧⲣⲓⲁⲙⲛⲛⲉⲧⲛⲇⲏⲙⲟⲥ"
+        options = ["ⲩⲉⲓ", "ⲓϩⲉ", "ⲧⲉⲓ", "ⲉⲉⲉ", "ⲁⲁⲗ"]
+        char_indexes = [ind for ind, ele in enumerate(sentence) if ele == "#"]
         ranking = rank(model, sentence, options, char_indexes)
         print("Ranking:")
         print("(option, log_sum)")

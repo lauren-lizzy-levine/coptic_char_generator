@@ -21,8 +21,8 @@ file_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stdout_handler)
 
-# share = False
-share = True  # share embedding table with output layer
+share = False
+#share = True  # share embedding table with output layer
 
 # embed_size = 20
 # embed_size = 50
