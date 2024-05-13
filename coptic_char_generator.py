@@ -385,6 +385,52 @@ def predict(model, data_item):
     logging.info(f"output text: {out_string}")
 
 
+def predict_top_k(model, data_item, k=10):
+    # because the decoding algorithm is greedy, this means replacing the one character that will lower the
+    # probability the least at each step
+    logging.info(f"input text: {data_item.text}")
+
+    index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
+    out = model([index_tensor])
+
+    # get target candidates
+    target_candidates = []
+    for emb in out[0]:
+        scores = emb
+        probabilities = nnf.softmax(scores, dim=0)
+        vocabid_probs = []
+        for i in range(len(probabilities)):
+            vocabid_probs.append((i, probabilities[i]))
+        sorted_vocabid_probs = sorted(vocabid_probs, key=lambda x: x[1], reverse=True)
+
+        target_candidates.append(sorted_vocabid_probs)
+
+    for j in range(k):
+        target = []
+        for candidate_list in target_candidates:
+            target.append(candidate_list[0][0]) # vocab index at the top of the list
+
+        out_indexes = []
+
+        for i in range(len(data_item.indexes)):
+            if data_item.indexes[i] == model.mask:
+                out_indexes.append(target[i])
+            else:
+                out_indexes.append(data_item.indexes[i])
+
+        out_string = model.decode(out_indexes)
+
+        logging.info(f"output text {j+1}: {out_string}")
+
+        # update target_candidates
+        delta = []
+        for candidate_list in target_candidates:
+            delta.append(candidate_list[0][1] - candidate_list[1][1]) # difference in probs between the best 2 options
+        min_index = delta.index(min(delta))
+        target_candidates[min_index] = target_candidates[min_index][1:]
+
+
+
 def rank(model, sentence, options, char_indexes):
     # filter diacritics
     sentence = utils.filter_diacritics(sentence)

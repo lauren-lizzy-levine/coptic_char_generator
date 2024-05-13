@@ -60,6 +60,13 @@ if __name__ == "__main__":
         action="store",
     )
     parser.add_argument(
+        "-prk",
+        "--predict_top_k",
+        required=False,
+        help="sentence to predict",
+        action="store",
+    )
+    parser.add_argument(
         "-r",
         "--rank",
         required=False,
@@ -231,6 +238,12 @@ if __name__ == "__main__":
         sentence = args.predict
         data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
         predict(model, data_item)
+
+    if args.predict_top_k:
+        k = 5
+        sentence = args.predict_top_k
+        data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
+        predict_top_k(model, data_item, k)
 
     if args.rank:
         sentence = "ⲛⲛⲉⲧⲛⲟⲩⲱϣϥⲛⲟⲩⲕⲁⲥⲉⲃⲟⲗⲛϩⲏⲧϥⲉⲕⲉⲁⲥⲡⲉϫⲁϥⲛⲧⲉ###ⲛⲟⲩⲟⲩϣⲏⲛⲟⲩⲱⲧⲉⲧⲉⲧⲛⲉⲟⲩⲟⲙϥⲕⲁⲧⲁⲛⲉⲧⲙⲡⲁⲧⲣⲓⲁⲙⲛⲛⲉⲧⲛⲇⲏⲙⲟⲥ"
