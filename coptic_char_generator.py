@@ -388,8 +388,7 @@ def predict(model, data_item):
 
 
 def predict_top_k(model, data_item, k=10):
-    # because the decoding algorithm is greedy, this means replacing the one character that will lower the
-    # probability the least at each step
+    # beam search
     logging.info(f"input text: {data_item.text}")
 
     index_tensor = torch.tensor(data_item.indexes, dtype=torch.int64).to(device)
@@ -412,7 +411,6 @@ def predict_top_k(model, data_item, k=10):
         if data_item.indexes[i] == model.mask:
             lacuna_candidates.append(target_candidates[i])
 
-    top_k = []
     top_k = [[list(), 0.0]]
     # walk over each step in sequence
     for row in lacuna_candidates:
@@ -427,38 +425,7 @@ def predict_top_k(model, data_item, k=10):
         ordered = sorted(all_candidates, key=lambda tup: tup[1], reverse=True)
         # select k best
         top_k = ordered[:k]
-    #print(top_k)
-    '''
-    for j in range(k):
-        lacuna_target = []
-        for lacuna_candidate_list in lacuna_candidates:
-            lacuna_target.append(lacuna_candidate_list[0][0]) # vocab index at the top of the list
 
-        out_indexes = []
-        lacuna_indexes = []
-
-        lacuna_target_index = 0
-        for i in range(len(data_item.indexes)):
-            if data_item.indexes[i] == model.mask:
-                out_indexes.append(lacuna_target[lacuna_target_index])
-                lacuna_indexes.append(lacuna_target[lacuna_target_index])
-                lacuna_target_index += 1
-            else:
-                out_indexes.append(data_item.indexes[i])
-
-        out_string = model.decode(out_indexes)
-        lacuna_string = model.decode(lacuna_indexes)
-
-        #logging.info(f"output text {j+1}: {out_string}")
-        top_k.append(lacuna_string)
-
-        # update target_candidates
-        delta = []
-        for lacuna_candidate_list in lacuna_candidates:
-            delta.append(lacuna_candidate_list[0][1] - lacuna_candidate_list[1][1]) # difference in probs between the best 2 options
-        min_index = delta.index(min(delta))
-        lacuna_candidates[min_index] = lacuna_candidates[min_index][1:]
-    '''
     # write top k to file
     with open('top_k.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -467,7 +434,7 @@ def predict_top_k(model, data_item, k=10):
             seq = seq_value[0]
             value = seq_value[1]
             lacuna_string = model.decode(seq)
-            writer.writerow([index, lacuna_string, value])
+            writer.writerow([index+1, lacuna_string, value])
 
 
 def rank(model, sentence, options, char_indexes):
