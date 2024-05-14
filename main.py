@@ -121,8 +121,8 @@ if __name__ == "__main__":
             masked_reconstructed_lacuna_csv, masked_reconstructed_lacuna_sentences
         )
 
-    model_name = "coptic_smart_once_april_best"#"coptic_sp_smart_dynamic"
-
+    model_name = "coptic_smart_once_april_best"#"coptic_random_dynamic_5_13"#"coptic_sp_smart_dynamic"
+    #model_name = "coptic_random_dynamic_5_13"
     # step 2 - sentence piece (on training)
     if args.sentencepiece:
         sp_coptic.create_sentencepiece_model(
@@ -240,14 +240,19 @@ if __name__ == "__main__":
         predict(model, data_item)
 
     if args.predict_top_k:
-        k = 5
+        k = 1000
         sentence = args.predict_top_k
         data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
         predict_top_k(model, data_item, k)
 
     if args.rank:
-        sentence = "ⲛⲛⲉⲧⲛⲟⲩⲱϣϥⲛⲟⲩⲕⲁⲥⲉⲃⲟⲗⲛϩⲏⲧϥⲉⲕⲉⲁⲥⲡⲉϫⲁϥⲛⲧⲉ###ⲛⲟⲩⲟⲩϣⲏⲛⲟⲩⲱⲧⲉⲧⲉⲧⲛⲉⲟⲩⲟⲙϥⲕⲁⲧⲁⲛⲉⲧⲙⲡⲁⲧⲣⲓⲁⲙⲛⲛⲉⲧⲛⲇⲏⲙⲟⲥ"
-        options = ["ⲩⲉⲓ", "ⲓϩⲉ", "ⲧⲉⲓ", "ⲉⲉⲉ", "ⲁⲁⲗ"]
+        #sentence = "ⲛⲛⲉⲧⲛⲟⲩⲱϣϥⲛⲟⲩⲕⲁⲥⲉⲃⲟⲗⲛϩⲏⲧϥⲉⲕⲉⲁⲥⲡⲉϫⲁϥⲛⲧⲉ###ⲛⲟⲩⲟⲩϣⲏⲛⲟⲩⲱⲧⲉⲧⲉⲧⲛⲉⲟⲩⲟⲙϥⲕⲁⲧⲁⲛⲉⲧⲙⲡⲁⲧⲣⲓⲁⲙⲛⲛⲉⲧⲛⲇⲏⲙⲟⲥ"
+        #options = ["ⲩⲉⲓ", "ⲓϩⲉ", "ⲧⲉⲓ", "ⲉⲉⲉ", "ⲁⲁⲗ"]
+        sentence = "ⲁⲕⲛⲟϭⲛⲉϭⲡϫⲟⲉⲓⲥⲁⲕϫⲟⲟⲥϫⲉϩⲙⲡⲁϣⲁⲓⲛⲛϩⲁⲣⲙⲁϯ#####ⲉϩⲣⲁⲓⲉⲡϫⲓⲥⲉ"
+        options = ["ⲟⲁⲟⲟⲓ", "ⲛⲁⲟⲩⲉ", "ⲛⲁⲁⲗⲉ", "ⲙⲟⲟϣⲉ"]
+        #sentence = "ⲁⲥⲡⲁⲍⲉⲙⲙⲟⲥⲁⲧⲉⲥ#####ⲛϩⲁϩⲛⲥⲟⲡ"
+        #sentence = "ⲁⲥⲡⲁⲍⲉⲙⲙⲟⲥⲉⲧⲉⲥ#####ⲛϩⲁϩⲛⲥⲟⲡ"
+        #options = ["ϩⲏⲩⲉⲛ", "ⲧⲁⲡⲣⲟ", "ⲡⲁⲓϭⲉ", "ⲟⲩⲟϭⲉ", "ϭⲁⲗⲟϫ", "ⲧⲉϩⲛⲉ"]
         char_indexes = [ind for ind, ele in enumerate(sentence) if ele == "#"]
         ranking = rank(model, sentence, options, char_indexes)
         print("Ranking:")
