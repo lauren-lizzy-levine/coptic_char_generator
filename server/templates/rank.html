@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample Form</title>
+</head>
+<body>
+<p>Rank Lacuna Candidates:</p>
+<form method="post">
+    <label for="sentence">Sentence:</label>
+    <input type="string" name="sentence" value=""/>
+    <label for="options">Options:</label>
+    <input type="string" name="options" value=""/>
+    <input type="submit">
+</form>
+
+<form action="/">
+    <input type="submit" value="Back" />
+</form>
+
+<p>Result: {{ result }}</p>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample Form</title>
+</head>
+<body>
+<p>Predict Lacuna for Sentence (top k):</p>
+<form method="post" enctype="multipart/form-data">
+    <label for="sentence">Sentence:</label>
+    <input type="string" name="sentence" value=""/>
+    <label for="k">K:</label>
+    <input type="int" name="k" value=""/>
+    <input type="submit">
+</form>
+
+<form action="/">
+    <input type="submit" value="Back" />
+</form>
+
+<p>Result: {{ result }}</p>
+
+</body>
+</html>

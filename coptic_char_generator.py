@@ -385,6 +385,7 @@ def predict(model, data_item):
     out_string = model.decode(out_indexes)
 
     logging.info(f"output text: {out_string}")
+    return out_string
 
 
 def predict_top_k(model, data_item, k=10):
@@ -426,6 +427,8 @@ def predict_top_k(model, data_item, k=10):
         # select k best
         top_k = ordered[:k]
 
+    return_list = []
+
     # write top k to file
     with open('top_k.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -434,7 +437,10 @@ def predict_top_k(model, data_item, k=10):
             seq = seq_value[0]
             value = seq_value[1]
             lacuna_string = model.decode(seq)
+            return_list.append(lacuna_string)
             writer.writerow([index+1, lacuna_string, value])
+
+    return return_list
 
 
 def rank(model, sentence, options, char_indexes):
