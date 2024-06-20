@@ -1,22 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Sample Form</title>
+    <link href='https://fonts.googleapis.com/css?family=Asul' rel='stylesheet'>
+    <link rel="stylesheet" href="static/main.css">
 </head>
+
 <body>
-<p>Predict Lacuna for Sentence:</p>
+<header>Predict Lacuna for Sentence</header>
+
 <form method="post">
-    <label for="sentence">Sentence:</label>
-    <input type="string" name="sentence" value=""/>
-    <input type="submit">
+    <div class="button-container">
+        <label class="label" for="sentence">Sentence:</label>
+        <input class="input-container" type="string" name="sentence" value="" placeholder="Use the # symbol to represent missing characters"/>
+        <label class="label" for="model_name">Model:</label>
+        <select class="input-container-medium" id="model_name" name="model_name">
+            <option class="label" value="" disabled selected hidden>Select model...</option>
+            <option class="label" value="Smart Once">Smart Once</option>
+          <option class="label" value="Random Dynamic">Random Dynamic</option>
+        </select>
+        <button>Submit</button>
+    </div>
 </form>
 
-<form action="/">
-    <input type="submit" value="Back" />
-</form>
 
-<p>Result: {{ result }}</p>
+<div class="button-container">
+    <p class="label">Result: {{ result }}</p>
+</div>
+
+<div class="button-container">
+    <form action="/">
+        <button>Back</button>
+    </form>
+</div>
 
 </body>
 </html>

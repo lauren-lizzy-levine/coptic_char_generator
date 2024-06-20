@@ -1,7 +1,12 @@
 import uvicorn
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from controller import Controller
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+import json
 
 import sys
 sys.path.append("..")
@@ -11,12 +16,26 @@ from coptic_utils import DataItem
 controller = Controller()
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates/")
 
 
 @app.get('/')
 def read_root(request: Request):
     return templates.TemplateResponse('index.html', context={'request': request})
+
+
+# Custom exception handler for RequestValidationError
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors_str = json.dumps(exc.errors())
+    return templates.TemplateResponse('error.html', context={'request': request, 'result': errors_str})
+
+
+# Custom exception handler for generic exceptions (500 Internal Server Error)
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return templates.TemplateResponse('error.html', context={'request': request, 'result': exc})
 
 
 @app.get("/predict")
@@ -26,8 +45,11 @@ def form_post(request: Request):
 
 
 @app.post("/predict")
-def form_post(request: Request, sentence: str = Form(...)):
-    model = controller.model
+def form_post(request: Request, sentence: str = Form(...), model_name: str = Form(...)):
+    if model_name == "Smart Once":
+        model = controller.smart_once_model
+    elif model_name == "Random Dynamic":
+        model = controller.random_dynamic_model
     data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
     result = predict(model, data_item)
     return templates.TemplateResponse('predict.html', context={'request': request, 'result': result})
@@ -40,8 +62,11 @@ def form_post(request: Request):
 
 
 @app.post("/predict_k")
-def form_post(request: Request, sentence: str = Form(...), k: int = Form(...)):
-    model = controller.model
+def form_post(request: Request, sentence: str = Form(...), k: int = Form(...), model_name: str = Form(...)):
+    if model_name == "Smart Once":
+        model = controller.smart_once_model
+    elif model_name == "Random Dynamic":
+        model = controller.random_dynamic_model
     data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
     result = predict_top_k(model, data_item, k)
     return templates.TemplateResponse('predict_k.html', context={'request': request, 'result': result})
@@ -54,8 +79,11 @@ def form_post(request: Request):
 
 
 @app.post("/rank")
-def form_post(request: Request, sentence: str = Form(...), options: str = Form(...)):
-    model = controller.model
+def form_post(request: Request, sentence: str = Form(...), options: str = Form(...), model_name: str = Form(...)):
+    if model_name == "Smart Once":
+        model = controller.smart_once_model
+    elif model_name == "Random Dynamic":
+        model = controller.random_dynamic_model
     options = options.split(" ")
     char_indexes = [ind for ind, ele in enumerate(sentence) if ele == "#"]
     ranking = rank(model, sentence, options, char_indexes)

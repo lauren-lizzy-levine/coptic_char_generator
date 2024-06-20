@@ -1,19 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Asul' rel='stylesheet'>
+    <link rel="stylesheet" href="static/main.css">
+</head>
 <body>
-<p>Coptic Manuscript Reconstruction Tasks:</p>
+<header>
+    Coptic Manuscript Reconstruction Tasks
+</header>
 
-<form action="/predict">
-    <input type="submit" value="Predict Lacuna" />
-</form>
+<div class="button-container">
+    <form action="/predict">
+        <button>Predict Lacuna</button>
+    </form>
 
-<form action="/predict_k">
-    <input type="submit" value="Predict Lacuna (top k)" />
-</form>
+    <form action="/predict_k">
+        <button>Predict Lacuna (top k)</button>
+    </form>
 
-<form action="/rank">
-    <input type="submit" value="Rank Lacuna Candidates" />
-</form>
+    <form action="/rank">
+        <button>Rank Lacuna Candidates</button>
+    </form>
+</div>
 
 </body>
 </html>

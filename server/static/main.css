@@ -1,0 +1,75 @@
+body {
+    background-color: #F6F6F6; /* Light grey background */
+    font-family: Arial, sans-serif; /* Default font */
+}
+
+header {
+    background-color: #8E463D; /* Red Scriptorium background for header */
+    color: #fff; /* White font color */
+    padding: 20px;
+    text-align: center;
+    font-size: 2em; /* Large font size for header */
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+}
+
+.label {
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+    font-size: 22px;
+    margin-top: 20px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+.input-container {
+    font-size: 16px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: width 0.2s;
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+    width: 50%;
+}
+
+.input-container-small {
+    font-size: 16px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: width 0.2s;
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+    width: 5%;
+}
+
+.input-container-medium {
+    font-size: 16px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: width 0.2s;
+    width: 15%;
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.button-container button {
+    background-color: #fff; /* white background */
+    color: #8E463D; /* White text */
+    font-family: 'Asul', Helvetica, Arial, sans-serif;
+    padding: 15px 32px;
+    margin: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19)
+}
+
+.button-container button:hover {
+    background-color: #c0b4b2; /* Darker green on hover */
+}
