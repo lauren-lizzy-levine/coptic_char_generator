@@ -11,7 +11,7 @@
         <label class="label" for="sentence">Sentence:</label>
         <input class="input-container" type="string" name="sentence" value="" placeholder="Use the # symbol to represent missing characters"/>
         <label class="label" for="options">Options:</label>
-        <input class="input-container" type="string" name="options" value="" placeholder="Separate lacuna candidates with a space"/>
+        <input class="input-container" type="string" name="options" value="" placeholder="Use the | symbol to separate lacuna candidates"/>
         <label class="label" for="model_name">Model:</label>
         <select class="input-container-medium" id="model_name" name="model_name">
             <option class="label" value="" disabled selected hidden>Select model...</option>
@@ -22,8 +22,12 @@
     </div>
 </form>
 
-<div class="button-container">
-    <p class="label">Result: {{ result }}</p>
+<div class="result-container">
+    <p class="label">{{ result["input"] }}</p>
+</div>
+
+<div class="result-container">
+    <p class="label">{{ result["output"] }}</p>
 </div>
 
 <div class="button-container">

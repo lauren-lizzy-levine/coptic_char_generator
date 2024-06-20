@@ -51,7 +51,8 @@ def form_post(request: Request, sentence: str = Form(...), model_name: str = For
     elif model_name == "Random Dynamic":
         model = controller.random_dynamic_model
     data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
-    result = predict(model, data_item)
+    model_output = predict(model, data_item)
+    result = {"input": "Input: " + sentence, "output": "Result: " + model_output}
     return templates.TemplateResponse('predict.html', context={'request': request, 'result': result})
 
 
@@ -68,7 +69,11 @@ def form_post(request: Request, sentence: str = Form(...), k: int = Form(...), m
     elif model_name == "Random Dynamic":
         model = controller.random_dynamic_model
     data_item = model.actual_lacuna_mask_and_label(DataItem(), sentence)
-    result = predict_top_k(model, data_item, k)
+    model_output = predict_top_k(model, data_item, k)
+    string_output = ""
+    for k, output in enumerate(model_output):
+        string_output += str(k+1) + ". " + output + " "
+    result = {"input": "Input: " + sentence, "output": "Result: " + string_output}
     return templates.TemplateResponse('predict_k.html', context={'request': request, 'result': result})
 
 
@@ -84,10 +89,14 @@ def form_post(request: Request, sentence: str = Form(...), options: str = Form(.
         model = controller.smart_once_model
     elif model_name == "Random Dynamic":
         model = controller.random_dynamic_model
-    options = options.split(" ")
+    options = options.split("|")
     char_indexes = [ind for ind, ele in enumerate(sentence) if ele == "#"]
-    ranking = rank(model, sentence, options, char_indexes)
-    return templates.TemplateResponse('rank.html', context={'request': request, 'result': ranking})
+    model_output = rank(model, sentence, options, char_indexes)
+    string_output = ""
+    for k, output in enumerate(model_output):
+        string_output += str(k + 1) + ". " + output[0] + " "
+    result = {"input": "Input: " + sentence, "output": "Result: " + string_output}
+    return templates.TemplateResponse('rank.html', context={'request': request, 'result': result})
 
 
 if __name__ == "__main__":
