@@ -1,1 +1,8 @@
 fastapi
+uvicorn
+torch
+nltk
+numpy
+sentencepiece
+jinja2
+python-multipart
