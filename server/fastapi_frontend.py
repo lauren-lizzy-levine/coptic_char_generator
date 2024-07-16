@@ -16,11 +16,11 @@ from coptic_utils import DataItem
 controller = Controller()
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/lacuna-demo/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates/")
 
 
-@app.get('/')
+@app.get('/lacuna-demo')
 def read_root(request: Request):
     return templates.TemplateResponse('index.html', context={'request': request})
 
@@ -38,13 +38,13 @@ async def generic_exception_handler(request: Request, exc: Exception):
     return templates.TemplateResponse('error.html', context={'request': request, 'result': exc})
 
 
-@app.get("/predict")
+@app.get("/lacuna-demo/predict")
 def form_post(request: Request):
     result = ""
     return templates.TemplateResponse('predict.html', context={'request': request, 'result': result})
 
 
-@app.post("/predict")
+@app.post("/lacuna-demo/predict")
 def form_post(request: Request, sentence: str = Form(...), model_name: str = Form(...)):
     if model_name == "Smart Once":
         model = controller.smart_once_model
@@ -56,13 +56,13 @@ def form_post(request: Request, sentence: str = Form(...), model_name: str = For
     return templates.TemplateResponse('predict.html', context={'request': request, 'result': result})
 
 
-@app.get("/predict_k")
+@app.get("/lacuna-demo/predict_k")
 def form_post(request: Request):
     result = ""
     return templates.TemplateResponse('predict_k.html', context={'request': request, 'result': result})
 
 
-@app.post("/predict_k")
+@app.post("/lacuna-demo/predict_k")
 def form_post(request: Request, sentence: str = Form(...), k: int = Form(...), model_name: str = Form(...)):
     if model_name == "Smart Once":
         model = controller.smart_once_model
@@ -77,13 +77,13 @@ def form_post(request: Request, sentence: str = Form(...), k: int = Form(...), m
     return templates.TemplateResponse('predict_k.html', context={'request': request, 'result': result})
 
 
-@app.get("/rank")
+@app.get("/lacuna-demo/rank")
 def form_post(request: Request):
     result = ""
     return templates.TemplateResponse('rank.html', context={'request': request, 'result': result})
 
 
-@app.post("/rank")
+@app.post("/lacuna-demo/rank")
 def form_post(request: Request, sentence: str = Form(...), options: str = Form(...), model_name: str = Form(...)):
     if model_name == "Smart Once":
         model = controller.smart_once_model
@@ -100,4 +100,4 @@ def form_post(request: Request, sentence: str = Form(...), options: str = Form(.
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=4200)
