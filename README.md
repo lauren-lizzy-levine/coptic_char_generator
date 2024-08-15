@@ -39,3 +39,7 @@ To create the data set partition, add `-p` or `--partion` to the command.
 ### Evaluation (optional)
 
 To evaluate on the lacuna test sets, add `-e` or `--eval` to the command.
+
+## Demo
+
+A demo for interacting with several of our models is available online [here](https://gucorpling.org/lacuna-demo?).
